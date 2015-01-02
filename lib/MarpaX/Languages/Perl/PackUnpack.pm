@@ -147,10 +147,13 @@ character				::= basic_set										repeat_token	rank => 1
 							| bang_only_set			bang_token				repeat_token	rank => 2
 							| bang_or_endian_set	bang_or_endian_token	repeat_token	rank => 3
 							| endian_only_set		endian_token			repeat_token	rank => 4
-							| special_set									repeat_special	rank => 5,
+							| special_set									repeat_special	rank => 5
 
-repeat_token			::= repeat_count
-repeat_token			::= open_bracket repeat_flag close_bracket
+repeat_token			::= repeat_item
+							| repeat_item slash_literal repeat_item
+
+repeat_item				::= repeat_count
+repeat_item				::= open_bracket repeat_flag close_bracket
 
 repeat_count			::= repeat_number
 							| star
@@ -213,6 +216,9 @@ open_bracket			~ '['
 
 :lexeme					~ number				pause => before		event => number
 number					~ [\d]+
+
+:lexeme					~ slash_literal			pause => before		event => slash_literal
+slash_literal			~ '/'
 
 :lexeme					~ special_set			pause => before		event => special_set
 special_set				~ [()]
@@ -417,9 +423,9 @@ sub _process_pack
 		bang_only_set       => 1,
 		basic_set           => 1,
 		endian_only_set     => 1,
-		special_set         => 1,
 	);
 	my($bracket_count) = 0;
+	my($slash_count)   = 0;
 
 	if ($self -> options & debug)
 	{
@@ -457,7 +463,7 @@ sub _process_pack
 
 		# Ensure modifiers, repeat counts etc are daughters of their primary events.
 
-		if ( ($last_event ne '') && ($bracket_count == 0) )
+		if ( ($last_event ne '') && ($bracket_count == 0) && ($slash_count == 0) )
 		{
 			if ($primary_event{$event_name})
 			{
@@ -478,6 +484,15 @@ sub _process_pack
 		elsif ( ($event_name eq 'close_bracket') || ($lexeme eq ')') )
 		{
 			$bracket_count--;
+		}
+
+		if ($event_name eq 'slash_literal')
+		{
+			$slash_count++;
+		}
+		elsif ($slash_count > 0)
+		{
+			$slash_count--;
 		}
 
 		$last_event = $event_name;
