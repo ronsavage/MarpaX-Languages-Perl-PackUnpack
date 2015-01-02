@@ -53,6 +53,9 @@ my(@text)   =
 	q|j>![10]|,
 	q|d[x![d]]|,
 	q|C0U4|,
+	q|(sl)<|,
+	q|(sl)<5|,
+	q|(sl)5>|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 
