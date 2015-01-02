@@ -147,16 +147,19 @@ character				::= basic_set										repeat_token	rank => 1
 							| bang_only_set			bang_token				repeat_token	rank => 2
 							| bang_or_endian_set	bang_or_endian_token	repeat_token	rank => 3
 							| endian_only_set		endian_token			repeat_token	rank => 4
+							| special_set									repeat_number	rank => 5,
 
-repeat_token			::=
 repeat_token			::= repeat_count
 repeat_token			::= open_bracket repeat_flag close_bracket
 
-repeat_count			::= number
+repeat_count			::= repeat_number
 							| star
 
+repeat_number			::=
+repeat_number			::= number
+
 repeat_flag				::= repeat_count
-							| character # TODO This probably should be basic_set|bang_only_set|...
+							| character
 
 bang_token				::=
 bang_token				::= bang_literal
@@ -176,7 +179,7 @@ endian_token			::= endian_literal
 # Lexemes in alphabetical order.
 
 :lexeme					~ basic_set				pause => before		event => basic_set
-basic_set				~ [aAZbBhHcCW]
+basic_set				~ [aAZbBhHcCwWuU]
 
 :lexeme					~ bang_literal			pause => before		event => bang_literal
 bang_literal			~ '!'
@@ -207,6 +210,9 @@ open_bracket			~ '['
 
 :lexeme					~ number				pause => before		event => number
 number					~ [\d]+
+
+:lexeme					~ special_set			pause => before		event => special_set
+special_set				~ [()]
 
 :lexeme					~ star					pause => before		event => star
 star					~ '*'
@@ -396,25 +402,27 @@ sub _pop_stack
 
 sub _process_pack
 {
-	my($self)       = @_;
-	my($string)     = $self -> template || ''; # Allow for undef.
-	my($pos)        = 0;
-	my($length)     = length($string);
-	my($format)     = "%-20s    %5s    %5s    %5s    %-20s    %-20s\n";
-	my($last_event) = '';
-
-	if ($self -> options & debug)
-	{
-		print "Length of input: $length. Input |$string|\n";
-		print sprintf($format, 'Event', 'Start', 'Span', 'Pos', 'Lexeme', 'Comment');
-	}
+	my($self)          = @_;
+	my($string)        = $self -> template || ''; # Allow for undef.
+	my($pos)           = 0;
+	my($length)        = length($string);
+	my($format)        = "%-20s    %5s    %5s    %5s    %-20s    %-20s\n";
+	my($last_event)    = '';
 	my(%primary_event) =
 	(
 		bang_and_endian_set => 1,
 		bang_only_set       => 1,
 		basic_set           => 1,
 		endian_only_set     => 1,
+		special_set         => 1,
 	);
+	my($bracket_count) = 0;
+
+	if ($self -> options & debug)
+	{
+		print "Length of input: $length. Input |$string|\n";
+		print sprintf($format, 'Event', 'Start', 'Span', 'Pos', 'Lexeme', 'Comment');
+	}
 
 	my($event_name);
 	my($lexeme);
@@ -446,19 +454,28 @@ sub _process_pack
 
 		# Ensure modifiers, repeat counts etc are daughters of their primary events.
 
-		if ($last_event eq '')
+		if ( ($last_event ne '') && ($bracket_count == 0) )
 		{
-		}
-		elsif ($primary_event{$event_name})
-		{
-			$self -> _pop_stack;
-		}
-		elsif ($primary_event{$last_event})
-		{
-			$self -> _push_stack;
+			if ($primary_event{$event_name})
+			{
+				$self -> _pop_stack;
+			}
+			elsif ($primary_event{$last_event})
+			{
+				$self -> _push_stack;
+			}
 		}
 
 		$self -> _add_daughter($event_name, {text => $lexeme});
+
+		if ($event_name eq 'open_bracket')
+		{
+			$bracket_count++;
+		}
+		elsif ($event_name eq 'close_bracket')
+		{
+			$bracket_count--;
+		}
 
 		$last_event = $event_name;
     }

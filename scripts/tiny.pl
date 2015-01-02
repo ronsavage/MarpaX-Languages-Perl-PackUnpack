@@ -3,16 +3,17 @@
 use strict;
 use warnings;
 
-use MarpaX::Languages::Perl::PackUnpack;
+use MarpaX::Languages::Perl::PackUnpack ':constants';
 
 # -----------
 
-my($parser) = MarpaX::Languages::Perl::PackUnpack -> new;
+my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => debug);
 my(@text)   =
 (
-	q|a|,
-	q|a10|,
-	q|a[10]|,
+	q|s![10]|,
+	q|d[x![d]]|,
+	q|C0U4|,
+	q|(sl)<|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 
