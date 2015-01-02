@@ -133,8 +133,6 @@ lexeme default			= latm => 1
 
 template				::= character+
 
-# These ranks only work because I've used (ranking_method => 'high_rule_only') in the call
-# to the constructor Marpa::R2::Scanless::R -> new().
 # The reason for the rank clauses is to handle cases like 'j'. Because that letter is in
 # both bang_or_endian_set and endian_only_set, the parse is ambiguous, and returns a forest
 # when there is no rank. In such a case, you get this:
@@ -142,6 +140,8 @@ template				::= character+
 #	  The current mode is "forest"
 # Since here is does not matter which way we jump, I've arbitrarily used ranks 1 .. 4.
 # AFAIK any ranks will do, as long as they are different.
+# BTW: These ranks only work because I've used (ranking_method => 'high_rule_only')
+# in the call to the constructor Marpa::R2::Scanless::R -> new().
 
 character				::= basic_set										repeat_token	rank => 1
 							| bang_only_set			bang_token				repeat_token	rank => 2
@@ -156,7 +156,7 @@ repeat_count			::= number
 							| star
 
 repeat_flag				::= repeat_count
-							| character # TODO This probably should be a_set|bang_only_set|...
+							| character # TODO This probably should be basic_set|bang_only_set|...
 
 bang_token				::=
 bang_token				::= bang_literal
