@@ -62,7 +62,7 @@ for my $text (@text)
 
 	print "Parsing |$text|\n";
 
-	$result = $parser -> parse($text);
+	$result = $parser -> parse_pack($text);
 
 	if ($result == 0)
 	{

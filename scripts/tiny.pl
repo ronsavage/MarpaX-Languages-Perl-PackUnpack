@@ -11,6 +11,8 @@ my($parser) = MarpaX::Languages::Perl::PackUnpack -> new;
 my(@text)   =
 (
 	q|a|,
+	q|a10|,
+	q|a[10]|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 
@@ -22,7 +24,7 @@ for my $text (@text)
 
 	print "Parsing |$text|\n";
 
-	$result = $parser -> parse($text);
+	$result = $parser -> parse_pack($text);
 
 	if ($result == 0)
 	{

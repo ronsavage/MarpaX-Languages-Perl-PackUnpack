@@ -328,7 +328,7 @@ sub node2string
 
 # ------------------------------------------------
 
-sub parse
+sub parse_pack
 {
 	my($self, $string) = @_;
 	$self -> template($string) if (defined $string);
@@ -356,7 +356,7 @@ sub parse
 
 	try
 	{
-		if (defined (my $value = $self -> _process) )
+		if (defined (my $value = $self -> _process_pack) )
 		{
 		}
 		else
@@ -377,7 +377,7 @@ sub parse
 
 	return $result;
 
-} # End of parse.
+} # End of parse_pack.
 
 # ------------------------------------------------
 
@@ -394,7 +394,7 @@ sub _pop_stack
 
 # ------------------------------------------------
 
-sub _process
+sub _process_pack
 {
 	my($self)       = @_;
 	my($string)     = $self -> template || ''; # Allow for undef.
@@ -408,6 +408,13 @@ sub _process
 		print "Length of input: $length. Input |$string|\n";
 		print sprintf($format, 'Event', 'Start', 'Span', 'Pos', 'Lexeme', 'Comment');
 	}
+	my(%primary_event) =
+	(
+		bang_and_endian_set => 1,
+		bang_only_set       => 1,
+		basic_set           => 1,
+		endian_only_set     => 1,
+	);
 
 	my($event_name);
 	my($lexeme);
@@ -437,50 +444,21 @@ sub _process
 
 		print sprintf($format, $event_name, $start, $span, $pos, $lexeme, '-') if ($self -> options & debug);
 
-		if ($event_name eq 'bang_and_endian_set')
+		# Ensure modifiers, repeat counts etc are daughters of their primary events.
+
+		if ($last_event eq '')
 		{
-			$self -> _add_daughter($event_name, {text => $lexeme});
 		}
-		elsif ($event_name eq 'bang_literal')
+		elsif ($primary_event{$event_name})
 		{
-			$self -> _process_bang_or_endian($event_name, $lexeme, $last_event);
+			$self -> _pop_stack;
 		}
-		elsif ($event_name eq 'bang_endian_literal')
+		elsif ($primary_event{$last_event})
 		{
-			$self -> _process_bang_or_endian($event_name, $lexeme, $last_event);
+			$self -> _push_stack;
 		}
-		elsif ($event_name eq 'bang_only_set')
-		{
-			$self -> _add_daughter($event_name, {text => $lexeme});
-		}
-		elsif ($event_name eq 'basic_set')
-		{
-			$self -> _add_daughter($event_name, {text => $lexeme});
-		}
-		elsif ($event_name eq 'close_bracket')
-		{
-			$self -> _process_bracket($event_name, $lexeme);
-		}
-		elsif ($event_name eq 'endian_literal')
-		{
-			$self -> _process_bang_or_endian($event_name, $lexeme, $last_event);
-		}
-		elsif ($event_name eq 'endian_only_set')
-		{
-			$self -> _add_daughter($event_name, {text => $lexeme});
-		}
-		if ($event_name eq 'number')
-		{
-			$self -> _process_repeat_count($event_name, $lexeme, $last_event);
-		}
-		elsif ($event_name eq 'open_bracket')
-		{
-			$self -> _process_bracket($event_name, $lexeme);
-		}
-		if ($event_name eq 'star')
-		{
-			$self -> _process_repeat_count($event_name, $lexeme, $last_event);
-		}
+
+		$self -> _add_daughter($event_name, {text => $lexeme});
 
 		$last_event = $event_name;
     }
@@ -512,93 +490,7 @@ sub _process
 
 	return $self -> pack_recce -> value;
 
-} # End of _process.
-
-# ------------------------------------------------
-
-sub _process_bang_or_endian
-{
-	my($self, $event_name, $name, $last_event) = @_;
-
-	# If the last event was '[', we just save the lexeme, but if it was not,
-	# we have to add the lexeme as a daughter of the char just parsed.
-
-	my($stack) = $self -> stack;
-
-	if ($last_event eq 'open_bracket')
-	{
-		$self -> _add_daughter($event_name, {text => $name});
-	}
-	else
-	{
-		my(@daughters) = $$stack[$#$stack] -> children;
-
-		push @$stack, $daughters[$#daughters];
-
-		$self -> _add_daughter($event_name, {text => $name});
-
-		$self -> stack($stack);
-	}
-
-} # End of _process_bang_or_endian.
-
-# ------------------------------------------------
-
-sub _process_bracket
-{
-	my($self, $event_name, $name) = @_;
-
-	# When a '[' is encountered, the last thing pushed becomes it's parent.
-	# Likewise, if ']' is encountered, we pop the stack.
-
-	my($stack) = $self -> stack;
-
-	if ($name eq '[')
-	{
-		my(@daughters) = $$stack[$#$stack] -> children;
-
-		push @$stack, $daughters[$#daughters];
-
-		$self -> _add_daughter($event_name, {text => $name});
-	}
-	else
-	{
-		$self -> _add_daughter($event_name, {text => $name});
-
-		pop @$stack;
-
-		$self -> stack($stack);
-	}
-
-} # End of _process_bracket.
-
-# ------------------------------------------------
-
-sub _process_repeat_count
-{
-	my($self, $event_name, $name, $last_event) = @_;
-
-	# If the last event was '[', we just save the lexeme, but if it was not,
-	# we have to add the lexeme as a daughter of the char just parsed.
-
-	my($stack) = $self -> stack;
-
-	if ($last_event eq 'open_bracket')
-	{
-		$self -> _add_daughter($event_name, {text => $name});
-	}
-	else
-	{
-		my(@daughters) = $$stack[$#$stack] -> children;
-
-		push @$stack, $daughters[$#daughters];
-
-		$self -> _add_daughter($event_name, {text => $name});
-
-		$self -> stack($stack);
-	}
-
-} # End of _process_repeat_count.
+} # End of _process_pack.
 
 # ------------------------------------------------
 
@@ -609,6 +501,8 @@ sub _push_stack
 	my(@daughters) = $$stack[$#$stack] -> children;
 
 	push @$stack, $daughters[$#daughters];
+
+	$self -> stack($stack);
 
 } # End of _push_stack.
 
