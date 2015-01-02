@@ -147,7 +147,7 @@ character				::= basic_set										repeat_token	rank => 1
 							| bang_only_set			bang_token				repeat_token	rank => 2
 							| bang_or_endian_set	bang_or_endian_token	repeat_token	rank => 3
 							| endian_only_set		endian_token			repeat_token	rank => 4
-							| special_set									repeat_number	rank => 5,
+							| special_set									repeat_special	rank => 5,
 
 repeat_token			::= repeat_count
 repeat_token			::= open_bracket repeat_flag close_bracket
@@ -160,6 +160,9 @@ repeat_number			::= number
 
 repeat_flag				::= repeat_count
 							| character
+
+repeat_special			::= repeat_number endian_token
+							| endian_token repeat_number
 
 bang_token				::=
 bang_token				::= bang_literal
@@ -334,7 +337,7 @@ sub node2string
 
 # ------------------------------------------------
 
-sub parse_pack
+sub pack_template
 {
 	my($self, $string) = @_;
 	$self -> template($string) if (defined $string);
@@ -383,7 +386,7 @@ sub parse_pack
 
 	return $result;
 
-} # End of parse_pack.
+} # End of pack_template.
 
 # ------------------------------------------------
 
@@ -468,11 +471,11 @@ sub _process_pack
 
 		$self -> _add_daughter($event_name, {text => $lexeme});
 
-		if ($event_name eq 'open_bracket')
+		if ( ($event_name eq 'open_bracket') || ($lexeme eq '(') )
 		{
 			$bracket_count++;
 		}
-		elsif ($event_name eq 'close_bracket')
+		elsif ( ($event_name eq 'close_bracket') || ($lexeme eq ')') )
 		{
 			$bracket_count--;
 		}

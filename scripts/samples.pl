@@ -51,6 +51,8 @@ my(@text)   =
 	q|j>!10|,
 	q|j<![10]|,
 	q|j>![10]|,
+	q|d[x![d]]|,
+	q|C0U4|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 
@@ -62,7 +64,7 @@ for my $text (@text)
 
 	print "Parsing |$text|\n";
 
-	$result = $parser -> parse_pack($text);
+	$result = $parser -> pack_template($text);
 
 	if ($result == 0)
 	{

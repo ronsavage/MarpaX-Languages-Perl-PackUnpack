@@ -7,13 +7,12 @@ use MarpaX::Languages::Perl::PackUnpack ':constants';
 
 # -----------
 
-my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => debug);
+my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => nothing_is_fatal);
 my(@text)   =
 (
-	q|s![10]|,
-	q|d[x![d]]|,
-	q|C0U4|,
 	q|(sl)<|,
+	q|(sl)<5|,
+	q|(sl)5>|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 
@@ -25,7 +24,7 @@ for my $text (@text)
 
 	print "Parsing |$text|\n";
 
-	$result = $parser -> parse_pack($text);
+	$result = $parser -> pack_template($text);
 
 	if ($result == 0)
 	{
