@@ -1,0 +1,257 @@
+Parsing |a|
+root. Attributes: {}
+   |--- a_set. Attributes: {text => "a"}
+Parse result: 0 (0 is success)
+Parsing |a10|
+root. Attributes: {}
+   |--- a_set. Attributes: {text => "a"}
+       |--- number. Attributes: {text => "10"}
+Parse result: 0 (0 is success)
+Parsing |a[10]|
+root. Attributes: {}
+   |--- a_set. Attributes: {text => "a"}
+   |   |--- open_bracket. Attributes: {text => "["}
+   |   |--- number. Attributes: {text => "10"}
+       |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |a*|
+root. Attributes: {}
+   |--- a_set. Attributes: {text => "a"}
+       |--- star. Attributes: {text => "*"}
+Parse result: 0 (0 is success)
+Parsing |a[*]|
+root. Attributes: {}
+   |--- a_set. Attributes: {text => "a"}
+   |   |--- open_bracket. Attributes: {text => "["}
+   |   |--- star. Attributes: {text => "*"}
+       |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |s|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+Parse result: 0 (0 is success)
+Parsing |s!|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+       |--- bang_literal. Attributes: {text => "!"}
+Parse result: 0 (0 is success)
+Parsing |s!10|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_literal. Attributes: {text => "!"}
+       |   |--- number. Attributes: {text => "10"}
+Parse result: 0 (0 is success)
+Parsing |s![10]|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_literal. Attributes: {text => "!"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- number. Attributes: {text => "10"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |s!*|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_literal. Attributes: {text => "!"}
+       |   |--- star. Attributes: {text => "*"}
+Parse result: 0 (0 is success)
+Parsing |s![*]|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_literal. Attributes: {text => "!"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- star. Attributes: {text => "*"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |s!<|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+       |--- bang_endian_literal. Attributes: {text => "!<"}
+Parse result: 0 (0 is success)
+Parsing |s!>|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+       |--- bang_endian_literal. Attributes: {text => "!>"}
+Parse result: 0 (0 is success)
+Parsing |s!<10|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_endian_literal. Attributes: {text => "!<"}
+       |   |--- number. Attributes: {text => "10"}
+Parse result: 0 (0 is success)
+Parsing |s!>10|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_endian_literal. Attributes: {text => "!>"}
+       |   |--- number. Attributes: {text => "10"}
+Parse result: 0 (0 is success)
+Parsing |s!<[10]|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_endian_literal. Attributes: {text => "!<"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- number. Attributes: {text => "10"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |s!>[10]|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_endian_literal. Attributes: {text => "!>"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- number. Attributes: {text => "10"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |s<!|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+       |--- bang_endian_literal. Attributes: {text => "<!"}
+Parse result: 0 (0 is success)
+Parsing |s>!|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+       |--- bang_endian_literal. Attributes: {text => ">!"}
+Parse result: 0 (0 is success)
+Parsing |s<!10|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_endian_literal. Attributes: {text => "<!"}
+       |   |--- number. Attributes: {text => "10"}
+Parse result: 0 (0 is success)
+Parsing |s>!10|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_endian_literal. Attributes: {text => ">!"}
+       |   |--- number. Attributes: {text => "10"}
+Parse result: 0 (0 is success)
+Parsing |s<![10]|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_endian_literal. Attributes: {text => "<!"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- number. Attributes: {text => "10"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |s>![10]|
+root. Attributes: {}
+   |--- bang_and_endian_set. Attributes: {text => "s"}
+   |   |--- bang_endian_literal. Attributes: {text => ">!"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- number. Attributes: {text => "10"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |j|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+Parse result: 0 (0 is success)
+Parsing |j!|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+       |--- bang_literal. Attributes: {text => "!"}
+Parse result: 0 (0 is success)
+Parsing |j!10|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_literal. Attributes: {text => "!"}
+       |   |--- number. Attributes: {text => "10"}
+Parse result: 0 (0 is success)
+Parsing |j![10]|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_literal. Attributes: {text => "!"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- number. Attributes: {text => "10"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |j!*|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_literal. Attributes: {text => "!"}
+       |   |--- star. Attributes: {text => "*"}
+Parse result: 0 (0 is success)
+Parsing |j![*]|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_literal. Attributes: {text => "!"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- star. Attributes: {text => "*"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |j!<|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+       |--- bang_endian_literal. Attributes: {text => "!<"}
+Parse result: 0 (0 is success)
+Parsing |j!>|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+       |--- bang_endian_literal. Attributes: {text => "!>"}
+Parse result: 0 (0 is success)
+Parsing |j!<10|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_endian_literal. Attributes: {text => "!<"}
+       |   |--- number. Attributes: {text => "10"}
+Parse result: 0 (0 is success)
+Parsing |j!>10|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_endian_literal. Attributes: {text => "!>"}
+       |   |--- number. Attributes: {text => "10"}
+Parse result: 0 (0 is success)
+Parsing |j!<[10]|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_endian_literal. Attributes: {text => "!<"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- number. Attributes: {text => "10"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |j!>[10]|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_endian_literal. Attributes: {text => "!>"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- number. Attributes: {text => "10"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |j<!|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+       |--- bang_endian_literal. Attributes: {text => "<!"}
+Parse result: 0 (0 is success)
+Parsing |j>!|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+       |--- bang_endian_literal. Attributes: {text => ">!"}
+Parse result: 0 (0 is success)
+Parsing |j<!10|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_endian_literal. Attributes: {text => "<!"}
+       |   |--- number. Attributes: {text => "10"}
+Parse result: 0 (0 is success)
+Parsing |j>!10|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_endian_literal. Attributes: {text => ">!"}
+       |   |--- number. Attributes: {text => "10"}
+Parse result: 0 (0 is success)
+Parsing |j<![10]|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_endian_literal. Attributes: {text => "<!"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- number. Attributes: {text => "10"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+Parsing |j>![10]|
+root. Attributes: {}
+   |--- endian_only_set. Attributes: {text => "j"}
+   |   |--- bang_endian_literal. Attributes: {text => ">!"}
+   |   |   |--- open_bracket. Attributes: {text => "["}
+   |   |   |--- number. Attributes: {text => "10"}
+       |   |--- close_bracket. Attributes: {text => "]"}
+Parse result: 0 (0 is success)
+fail   :   0
+success:  41
+total  :  41
