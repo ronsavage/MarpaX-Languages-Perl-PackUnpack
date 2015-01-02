@@ -475,7 +475,17 @@ sub _process_pack
 			}
 		}
 
+		if ($lexeme eq ')')
+		{
+			$self -> _pop_stack;
+		}
+
 		$self -> _add_daughter($event_name, {text => $lexeme});
+
+		if ($lexeme eq '(')
+		{
+			$self -> _push_stack;
+		}
 
 		if ( ($event_name eq 'open_bracket') || ($lexeme eq '(') )
 		{

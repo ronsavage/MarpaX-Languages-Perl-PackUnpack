@@ -57,6 +57,7 @@ my(@text)   =
 	q|(sl)<5|,
 	q|(sl)5>|,
 	q|a3/A A*|,
+	q|n/a* w/a2|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 
