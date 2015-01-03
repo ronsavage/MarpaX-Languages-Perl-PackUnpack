@@ -26,6 +26,14 @@ use Types::Standard qw/Any ArrayRef HashRef Int Str/;
 
 use Try::Tiny;
 
+has bnf =>
+(
+	default  => sub{return ''},
+	is       => 'rw',
+	isa      => Any,
+	required => 0,
+);
+
 has error_message =>
 (
 	default  => sub{return ''},
@@ -42,7 +50,15 @@ has error_number =>
 	required => 0,
 );
 
-has known_pack_events =>
+has grammar =>
+(
+	default  => sub {return ''},
+	is       => 'rw',
+	isa      => Any,
+	required => 0,
+);
+
+has known_events =>
 (
 	default  => sub{return {} },
 	is       => 'rw',
@@ -66,7 +82,7 @@ has options =>
 	required => 0,
 );
 
-has pack_bnf =>
+has recce =>
 (
 	default  => sub{return ''},
 	is       => 'rw',
@@ -74,35 +90,11 @@ has pack_bnf =>
 	required => 0,
 );
 
-has pack_grammar =>
-(
-	default  => sub {return ''},
-	is       => 'rw',
-	isa      => Any,
-	required => 0,
-);
-
-has pack_recce =>
-(
-	default  => sub{return ''},
-	is       => 'rw',
-	isa      => Any,
-	required => 0,
-);
-
-has pack_stack =>
+has stack =>
 (
 	default  => sub{return []},
 	is       => 'rw',
 	isa      => ArrayRef,
-	required => 0,
-);
-
-has pack_tree =>
-(
-	default  => sub{return ''},
-	is       => 'rw',
-	isa      => Any,
 	required => 0,
 );
 
@@ -111,6 +103,14 @@ has template =>
 	default  => sub{return ''},
 	is       => 'rw',
 	isa      => Str,
+	required => 0,
+);
+
+has tree =>
+(
+	default  => sub{return ''},
+	is       => 'rw',
+	isa      => Any,
 	required => 0,
 );
 
@@ -126,7 +126,7 @@ sub BUILD
 	#
 	# Pack syntax reference: http://perldoc.perl.org/functions/pack.html.
 
-	my($pack_bnf) = <<'END_OF_GRAMMAR';
+	my($bnf) = <<'END_OF_GRAMMAR';
 
 :default				::= action => [values]
 
@@ -251,23 +251,23 @@ whitespace				~ [\s]+
 
 END_OF_GRAMMAR
 
-	$self -> pack_bnf($pack_bnf);
-	$self -> pack_grammar
+	$self -> bnf($bnf);
+	$self -> grammar
 	(
 		Marpa::R2::Scanless::G -> new
 		({
-			source => \$self -> pack_bnf
+			source => \$self -> bnf
 		})
 	);
 
 	my(%event);
 
-	for my $line (split(/\n/, $self -> pack_bnf) )
+	for my $line (split(/\n/, $self -> bnf) )
 	{
 		$event{$1} = 1 if ($line =~ /event\s+=>\s+(\w+)/);
 	}
 
-	$self -> known_pack_events(\%event);
+	$self -> known_events(\%event);
 
 } # End of BUILD.
 
@@ -277,7 +277,7 @@ sub _add_pack_daughter
 {
 	my($self, $name, $attributes)  = @_;
 	$attributes ||= {};
-	my($stack)  = $self -> pack_stack;
+	my($stack)  = $self -> stack;
 	my($node)   = Tree -> new($name);
 
 	$node -> meta($attributes);
@@ -346,54 +346,25 @@ sub node2string
 
 # ------------------------------------------------
 
-sub pack_report
-{
-	my($self)     = @_;
-	my($count)    = 0;
-	my($previous) = '';
-	my($result)   = '';
-
-	my($attributes);
-	my($text);
-
-	for my $node ($self -> pack_tree -> traverse)
-	{
-		next if ($node -> is_root);
-
-		$count++;
-
-		$attributes = $node -> meta;
-		$text       = $$attributes{text};
-		$result     .= ' ' if ( ($count > 1) && ($previous ne '/') && ($node -> value =~ /set$/) );
-		$result     .= $text;
-		$previous   = $text;
-	}
-
-	return $result;
-
-} # End of pack_report.
-
-# ------------------------------------------------
-
 sub parse
 {
 	my($self, $string) = @_;
 	$self -> template($string) if (defined $string);
 
-	$self -> pack_recce
+	$self -> recce
 	(
 		Marpa::R2::Scanless::R -> new
 		({
-			grammar        => $self -> pack_grammar,
+			grammar        => $self -> grammar,
 			ranking_method => 'high_rule_only',
 		})
 	);
 
-	# Since $self -> pack_stack has not been initialized yet,
+	# Since $self -> stack has not been initialized yet,
 	# we can't call _add_pack_daughter() until after this statement.
 
-	$self -> pack_tree(Tree -> new('root') );
-	$self -> pack_stack([$self -> pack_tree]);
+	$self -> tree(Tree -> new('root') );
+	$self -> stack([$self -> tree]);
 
 	# Return 0 for success and 1 for failure.
 
@@ -428,16 +399,16 @@ sub parse
 
 # ------------------------------------------------
 
-sub _pop_pack_stack
+sub _pop_stack
 {
 	my($self)  = @_;
-	my($stack) = $self -> pack_stack;
+	my($stack) = $self -> stack;
 
 	pop @$stack;
 
-	$self -> pack_stack($stack);
+	$self -> stack($stack);
 
-} # End of _pop_pack_stack.
+} # End of _pop_stack.
 
 # ------------------------------------------------
 
@@ -478,16 +449,16 @@ sub _process_pack
 
 	for
 	(
-		$pos = $self -> pack_recce -> read(\$string, $pos, $length);
+		$pos = $self -> recce -> read(\$string, $pos, $length);
 		($pos < $length);
-		$pos = $self -> pack_recce -> resume($pos)
+		$pos = $self -> recce -> resume($pos)
 	)
 	{
-		($start, $span)            = $self -> pack_recce -> pause_span;
+		($start, $span)            = $self -> recce -> pause_span;
 		($event_name, $span, $pos) = $self -> _validate_event($string, $start, $span, $pos);
-		$lexeme                    = $self -> pack_recce -> literal($start, $span);
+		$lexeme                    = $self -> recce -> literal($start, $span);
 		$original_lexeme           = $lexeme;
-		$pos                       = $self -> pack_recce -> lexeme_read($event_name);
+		$pos                       = $self -> recce -> lexeme_read($event_name);
 
 		die "lexeme_read($event_name) rejected lexeme |$lexeme|\n" if (! defined $pos);
 
@@ -499,24 +470,24 @@ sub _process_pack
 		{
 			if ($primary_event{$event_name})
 			{
-				$self -> _pop_pack_stack;
+				$self -> _pop_stack;
 			}
 			elsif ($primary_event{$last_event})
 			{
-				$self -> _push_pack_stack;
+				$self -> _push_stack;
 			}
 		}
 
 		if ($lexeme eq ')')
 		{
-			$self -> _pop_pack_stack;
+			$self -> _pop_stack;
 		}
 
 		$self -> _add_pack_daughter($event_name, {text => $lexeme});
 
 		if ($lexeme eq '(')
 		{
-			$self -> _push_pack_stack;
+			$self -> _push_stack;
 		}
 
 		if ( ($event_name eq 'open_bracket') || ($lexeme eq '(') )
@@ -540,9 +511,9 @@ sub _process_pack
 		$last_event = $event_name;
     }
 
-	if (my $status = $self -> pack_recce -> ambiguous)
+	if (my $status = $self -> recce -> ambiguous)
 	{
-		my($terminals) = $self -> pack_recce -> terminals_expected;
+		my($terminals) = $self -> recce -> terminals_expected;
 		$terminals     = ['(None)'] if ($#$terminals < 0);
 		$message       = 'Ambiguous parse. Status: $status. Terminals expected: ' . join(', ', @$terminals);
 
@@ -565,21 +536,21 @@ sub _process_pack
 
 	# Return a defined value for success and undef for failure.
 
-	return $self -> pack_recce -> value;
+	return $self -> recce -> value;
 
 } # End of _process_pack.
 
 # ------------------------------------------------
 
-sub _push_pack_stack
+sub _push_stack
 {
 	my($self)      = @_;
-	my($stack)     = $self -> pack_stack;
+	my($stack)     = $self -> stack;
 	my(@daughters) = $$stack[$#$stack] -> children;
 
 	push @$stack, $daughters[$#daughters];
 
-	$self -> pack_stack($stack);
+	$self -> stack($stack);
 
 } # End of _push_stack.
 
@@ -612,6 +583,35 @@ sub size_report
 
 } # End of size_report.
 
+# ------------------------------------------------
+
+sub template_report
+{
+	my($self)     = @_;
+	my($count)    = 0;
+	my($previous) = '';
+	my($result)   = '';
+
+	my($attributes);
+	my($text);
+
+	for my $node ($self -> tree -> traverse)
+	{
+		next if ($node -> is_root);
+
+		$count++;
+
+		$attributes = $node -> meta;
+		$text       = $$attributes{text};
+		$result     .= ' ' if ( ($count > 1) && ($previous ne '/') && ($node -> value =~ /set$/) );
+		$result     .= $text;
+		$previous   = $text;
+	}
+
+	return $result;
+
+} # End of template_report.
+
 # -----------------------------------------------
 
 sub tree2string
@@ -619,7 +619,7 @@ sub tree2string
 	my($self, $options, $tree) = @_;
 	$options                   ||= {};
 	$$options{no_attributes}   ||= 0;
-	$tree                      ||= $self -> pack_tree;
+	$tree                      ||= $self -> tree;
 	my(@nodes)                 = $tree -> traverse;
 
 	my(@out);
@@ -639,12 +639,12 @@ sub tree2string
 sub _validate_event
 {
 	my($self, $string, $start, $span, $pos) = @_;
-	my(@event)         = @{$self -> pack_recce -> events};
+	my(@event)         = @{$self -> recce -> events};
 	my($event_count)   = scalar @event;
 	my(@event_name)    = sort map{$$_[0]} @event;
 	my($event_name)    = $event_name[0]; # Default.
 	my($lexeme)        = substr($string, $start, $span);
-	my($line, $column) = $self -> pack_recce -> line_column($start);
+	my($line, $column) = $self -> recce -> line_column($start);
 	my($literal)       = $self -> next_few_chars($string, $start + $span);
 	my($message)       = "Location: ($line, $column). Lexeme: |$lexeme|. Next few chars: |$literal|";
 	$message           = "$message. Events: $event_count. Names: ";
@@ -657,7 +657,7 @@ sub _validate_event
 
 	for (@event_name)
 	{
-		if (! ${$self -> known_pack_events}{$_})
+		if (! ${$self -> known_events}{$_})
 		{
 			$message = "Unexpected event name '$_'";
 
@@ -1108,7 +1108,7 @@ Returns the given hashref as a string.
 
 Called by L</format_node($options, $node)>.
 
-=head2 known_pack_events()
+=head2 known_events()
 
 Returns a hashref where the keys are event names and the values are 1.
 

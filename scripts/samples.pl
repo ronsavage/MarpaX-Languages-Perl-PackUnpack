@@ -67,7 +67,7 @@ for my $text (@text)
 {
 	$count{total}++;
 
-	print "Parsing |$text|\n";
+	print "$count{total}: Parsing: $text\n";
 
 	$result = $parser -> parse($text);
 
@@ -78,11 +78,18 @@ for my $text (@text)
 
 	print join("\n", @{$parser -> tree2string}), "\n";
 	print "Parse result: $result (0 is success)\n";
+	print 'Template: ', $parser -> template_report, "\n";
 }
+
+print "\n";
 
 $count{fail} = $count{total} - $count{success};
 
 for my $key (sort keys %count)
 {
-	print sprintf("%-7s: %3d\n", $key, $count{$key});
+	print sprintf("%-7s: %3d\n", ucfirst $key, $count{$key});
 }
+
+print "\n";
+
+$parser -> size_report;
