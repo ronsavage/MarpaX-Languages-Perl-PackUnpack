@@ -3,11 +3,11 @@
 use strict;
 use warnings;
 
-use MarpaX::Languages::Perl::PackUnpack;
+use MarpaX::Languages::Perl::PackUnpack ':constants';
 
 # -----------
 
-my($parser) = MarpaX::Languages::Perl::PackUnpack -> new;
+my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => print_warnings);
 my(@text)   =
 (
 	q|a|,
@@ -72,7 +72,7 @@ for my $text (@text)
 {
 	$count{total}++;
 
-	print "$count{total}: Parsing: $text. \n";
+	print "$count{total}: Parsing: $text. ";
 
 	$result = $parser -> parse($text);
 
@@ -81,8 +81,8 @@ for my $text (@text)
 		$count{success}++;
 	}
 
-	print "Parse result: $result (0 is success)\n";
-	print 'Template: ', $parser -> template_report, ". \n";
+	print "Parse result: $result (0 is success). ",
+		'Template: ', $parser -> template_report, ". \n";
 }
 
 print "\n";

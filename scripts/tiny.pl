@@ -14,6 +14,7 @@ my(@text)   =
 w/a2|,
 	q|aaaa|,
 	q|i9pl|,
+	q|a3/AA*|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 

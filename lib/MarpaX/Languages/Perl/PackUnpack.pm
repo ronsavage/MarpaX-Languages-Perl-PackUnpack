@@ -412,7 +412,7 @@ sub _process_pack
 		$message       = 'Ambiguous parse. Status: $status. Terminals expected: ' . join(', ', @$terminals);
 
 		$self -> error_message($message);
-		$self -> error_number(3);
+		$self -> error_number(1);
 
 		if ($self -> options & ambiguity_is_fatal)
 		{
@@ -422,7 +422,7 @@ sub _process_pack
 		}
 		elsif ($self -> options & print_warnings)
 		{
-			$self -> error_number(-3);
+			$self -> error_number(-1);
 
 			print "Warning: $message\n";
 		}
@@ -507,7 +507,7 @@ sub _validate_event
 			$message = "Unexpected event name '$_'";
 
 			$self -> error_message($message);
-			$self -> error_number(10);
+			$self -> error_number(2);
 
 			# This 'die' is inside try {}catch{}, which adds the prefix 'Error: '.
 
@@ -521,7 +521,7 @@ sub _validate_event
 		$message = "The code does not handle these events simultaneously: $message";
 
 		$self -> error_message($message);
-		$self -> error_number(11);
+		$self -> error_number(3);
 
 		# This 'die' is inside try {}catch{}, which adds the prefix 'Error: '.
 
@@ -544,141 +544,16 @@ C<MarpaX::Languages::Perl::PackUnpack> - Extract delimited text sequences from s
 
 =head1 Synopsis
 
-	#!/usr/bin/env perl
-
-	use strict;
-	use warnings;
-
-	use MarpaX::Languages::Perl::PackUnpack ':constants';
-
-	# -----------
-
-	my($count)  = 0;
-	my($parser) = MarpaX::Languages::Perl::PackUnpack -> new
-	(
-		open    => ['<:' ,'[%'],
-		close   => [':>', '%]'],
-		options => nesting_is_fatal | print_warnings,
-	);
-	my(@text) =
-	(
-		q|<: a :>|,
-		q|a [% b <: c :> d %] e|,
-		q|a <: b <: c :> d :> e|, # nesting_is_fatal triggers an error here.
-	);
-
-	my($result);
-
-	for my $text (@text)
-	{
-		$count++;
-
-		print "Parsing |$text|\n";
-
-		$result = $parser -> parse(\$text);
-
-		print join("\n", @{$parser -> tree2string}), "\n";
-		print "Parse result: $result (0 is success)\n";
-
-		if ($count == 3)
-		{
-			print "Deliberate error: Failed to parse |$text|\n";
-			print 'Error number: ', $parser -> error_number, '. Error message: ', $parser -> error_message, "\n";
-		}
-
-		print '-' x 50, "\n";
-	}
 
 See scripts/synopsis.pl.
 
 This is the printout of synopsis.pl:
 
-	Parsing |<: a :>|
-	Parsed text:
-	root. Attributes: {}
-	   |--- open. Attributes: {text => "<:"}
-	   |   |--- string. Attributes: {text => " a "}
-	   |--- close. Attributes: {text => ":>"}
-	Parse result: 0 (0 is success)
-	--------------------------------------------------
-	Parsing |a [% b <: c :> d %] e|
-	Parsed text:
-	root. Attributes: {}
-	   |--- string. Attributes: {text => "a "}
-	   |--- open. Attributes: {text => "[%"}
-	   |   |--- string. Attributes: {text => " b "}
-	   |   |--- open. Attributes: {text => "<:"}
-	   |   |   |--- string. Attributes: {text => " c "}
-	   |   |--- close. Attributes: {text => ":>"}
-	   |   |--- string. Attributes: {text => " d "}
-	   |--- close. Attributes: {text => "%]"}
-	   |--- string. Attributes: {text => " e"}
-	Parse result: 0 (0 is success)
-	--------------------------------------------------
-	Parsing |a <: b <: c :> d :> e|
-	Error: Parse failed. Opened delimiter <: again before closing previous one
-	Text parsed so far:
-	root. Attributes: {}
-	   |--- string. Attributes: {text => "a "}
-	   |--- open. Attributes: {text => "<:"}
-	       |--- string. Attributes: {text => " b "}
-	Parse result: 1 (0 is success)
-	Deliberate error: Failed to parse |a <: b <: c :> d :> e|
-	Error number: 2. Error message: Opened delimiter <: again before closing previous one
-	--------------------------------------------------
 
 =head1 Description
 
 L<MarpaX::Languages::Perl::PackUnpack> provides a L<Marpa::R2>-based parser for extracting delimited text
 sequences from strings.
-
-See the L</FAQ> for various topics, including:
-
-=over 4
-
-=item o UFT8 handling
-
-See t/utf8.t.
-
-=item o Escaping delimiters within the text
-
-See t/escapes.t.
-
-=item o Options to make nested and/or overlapped delimiters fatal errors
-
-See t/colons.t.
-
-=item o Using delimiters which are part of another delimiter
-
-See t/escapes.t and t/perl.delimiters.
-
-=item o Processing the tree-structured output
-
-See scripts/traverse.pl.
-
-=item o Emulating L<Text::Xslate>'s use of '<:' and ':>
-
-See t/colons.t and t/percents.t.
-
-=item o Implementing a really trivial HTML parser
-
-See scripts/traverse.pl and t/html.t.
-
-In the same vein, see t/angle.brackets.t, for code where the delimiters are just '<' and '>'.
-
-=item o Handling multiple sets of delimiters
-
-See t/multiple.delimiters.t.
-
-=item o Skipping (leading) characters in the input string
-
-See t/skip.prefix.t.
-
-=item o Implementing hard-to-read text strings as delimiters
-
-See t/silly.delimiters.
-
-=back
 
 =head1 Distributions
 
@@ -724,28 +599,6 @@ Key-value pairs accepted in the parameter list (see corresponding methods for de
 
 =over 4
 
-=item o close => $arrayref
-
-An arrayref of strings, each one a closing delimiter.
-
-The # of elements must match the # of elements in the 'open' arrayref.
-
-See the L</FAQ> for details and warnings.
-
-A value for this option is mandatory.
-
-Default: None.
-
-=item o length => $integer
-
-The maxiumum length of the input string to process.
-
-This parameter works in conjunction with the C<pos> parameter.
-
-See the L</FAQ> for details.
-
-Default: Calls Perl's length() function on the input string.
-
 =item o next_few_limit => $integer
 
 This controls how many characters are printed when displaying 'the next few chars'.
@@ -753,18 +606,6 @@ This controls how many characters are printed when displaying 'the next few char
 It only affects debug output.
 
 Default: 20.
-
-=item o open => $arrayref
-
-An arrayref of strings, each one an opening delimiter.
-
-The # of elements must match the # of elements in the 'open' arrayref.
-
-See the L</FAQ> for details and warnings.
-
-A value for this option is mandatory.
-
-Default: None.
 
 =item o options => $bit_string
 
@@ -774,21 +615,11 @@ Default: 0 (nothing is fatal).
 
 See the L</FAQ> for details.
 
-=item o pos => $integer
+=item o template => $string
 
-The offset within the input string at which to start processing.
+Specify the string to be parsed.
 
-This parameter works in conjunction with the C<length> parameter.
-
-See the L</FAQ> for details.
-
-Note: The first character in the input string is at pos == 0.
-
-Default: 0.
-
-=item o text => $a_reference_to_the_string_to_be_parsed
-
-Default: \''.
+Default: ''.
 
 =back
 
@@ -797,27 +628,6 @@ Default: \''.
 =head2 bnf()
 
 Returns a string containing the grammar constructed based on user input.
-
-=head2 close()
-
-Get the arrayref of closing delimiters.
-
-See also L</open()>.
-
-See the L</FAQ> for details and warnings.
-
-'close' is a parameter to L</new()>. See L</Constructor and Initialization> for details.
-
-=head2 delimiter_action()
-
-Returns a hashref, where the keys are delimiters and the values are either 'open' or 'close'.
-
-=head2 delimiter_frequency()
-
-Returns a hashref where the keys are opening and closing delimiters, and the values are the # of
-times each delimiter appears in the input stream.
-
-The value is incremented for each opening delimiter and decremented for each closing delimiter.
 
 =head2 error_message()
 
@@ -846,67 +656,21 @@ Possible values for error_number() and error_message():
 
 This is the default value.
 
-=item o 1/-1 => "Last open delimiter: $lexeme_1. Unexpected closing delimiter: $lexeme_2"
-
-If L</error_number()> returns 1, it's an error, and if it returns -1 it's a warning.
-
-You can set the option C<overlap_is_fatal> to make it fatal.
-
-=item o 2/-2 => "Opened delimiter $lexeme again before closing previous one"
-
-If L</error_number()> returns 2, it's an error, and if it returns -2 it's a warning.
-
-You can set the option C<nesting_is_fatal> to make it fatal.
-
-=item o 3/-3 => "Ambiguous parse. Status: $status. Terminals expected: a, b, ..."
+=item o 1/-1 => "Ambiguous parse. Status: $status. Terminals expected: a, b, ..."
 
 This message is only produced when the parse is ambiguous.
 
-If L</error_number()> returns 3, it's an error, and if it returns -3 it's a warning.
+If L</error_number()> returns 1, it's an error, and if it returns -1 it's a warning.
 
 You can set the option C<ambiguity_is_fatal> to make it fatal.
 
-=item o 4 => "Backslash is forbidden as a delimiter character"
-
-This preempts some types of sabotage.
-
-This message can never be just a warning message.
-
-=item o 5 => "Single-quotes are forbidden in multi-character delimiters"
-
-This limitation is due to the syntax of
-L<Marpa's DSL|https://metacpan.org/pod/distribution/Marpa-R2/pod/Scanless/DSL.pod>.
-
-This message can never be just a warning message.
-
-=item o 6/-6 => "Parse exhausted"
-
-If L</error_number()> returns 6, it's an error, and if it returns -6 it's a warning.
-
-You can set the option C<exhaustion_is_fatal> to make it fatal.
-
-=item o 7 => 'Single-quote is forbidden as an escape character'
-
-This limitation is due to the syntax of
-L<Marpa's DSL|https://metacpan.org/pod/distribution/Marpa-R2/pod/Scanless/DSL.pod>.
-
-This message can never be just a warning message.
-
-=item o 8 => "There must be at least 1 pair of open/close delimiters"
-
-This message can never be just a warning message.
-
-=item o 9 => "The # of open delimiters must match the # of close delimiters"
-
-This message can never be just a warning message.
-
-=item o 10 => "Unexpected event name 'xyz'"
+=item o 2 => "Unexpected event name 'xyz'"
 
 Marpa has trigged an event and it's name is not in the hash of event names derived from the BNF.
 
 This message can never be just a warning message.
 
-=item o 11 => "The code does not handle these events simultaneously: a, b, ..."
+=item o 3 => "The code does not handle these events simultaneously: a, b, ..."
 
 The code is written to handle single events at a time, or in rare cases, 2 events at the same time.
 But here, multiple events have been triggered and the code cannot handle the given combination.
@@ -917,60 +681,9 @@ This message can never be just a warning message.
 
 See L</error_message()>.
 
-=head2 escape_char([$char])
-
-Here, the [] indicate an optional parameter.
-
-Get or set the escape char.
-
-=head2 format_node($options, $node)
-
-Returns a string consisting of the node's name and, optionally, it's attributes.
-
-Possible keys in the $options hashref:
-
-=over 4
-
-=item o no_attributes => $Boolean
-
-If 1, the node's attributes are not included in the string returned.
-
-Default: 0 (include attributes).
-
-=back
-
-Calls L</hashref2string($hashref)>.
-
-Called by L</node2string($options, $is_last_node, $node, $vert_dashes)>.
-
-You would not normally call this method.
-
-If you don't wish to supply options, use format_node({}, $node).
-
-=head2 hashref2string($hashref)
-
-Returns the given hashref as a string.
-
-Called by L</format_node($options, $node)>.
-
 =head2 known_events()
 
 Returns a hashref where the keys are event names and the values are 1.
-
-=head2 length([$integer])
-
-Here, the [] indicate an optional parameter.
-
-Get or set the length of the input string to process.
-
-See also the L</FAQ> and L</pos([$integer])>.
-
-'length' is a parameter to L</new()>. See L</Constructor and Initialization> for details.
-
-=head2 matching_delimiter()
-
-Returns a hashref where the keys are opening delimiters and the values are the corresponding closing
-delimiters.
 
 =head2 new()
 
@@ -989,38 +702,6 @@ Here, the [] indicate an optional parameter.
 Get or set the number of characters called 'the next few chars', which are printed during debugging.
 
 'next_few_limit' is a parameter to L</new()>. See L</Constructor and Initialization> for details.
-
-=head2 node2string($options, $is_last_node, $node, $vert_dashes)
-
-Returns a string of the node's name and attributes, with a leading indent, suitable for printing.
-
-Possible keys in the $options hashref:
-
-=over 4
-
-=item o no_attributes => $Boolean
-
-If 1, the node's attributes are not included in the string returned.
-
-Default: 0 (include attributes).
-
-=back
-
-Ignore the parameter $vert_dashes. The code uses it as temporary storage.
-
-Calls L</format_node($options, $node)>.
-
-Called by L</tree2string($options, [$some_tree])>.
-
-=head2 open()
-
-Get the arrayref of opening delimiters.
-
-See also L</close()>.
-
-See the L</FAQ> for details and warnings.
-
-'open' is a parameter to L</new()>. See L</Constructor and Initialization> for details.
 
 =head2 options([$bit_string])
 
@@ -1054,15 +735,58 @@ Returns 0 for success and 1 for failure.
 
 If the value is 1, you should call L</error_number()> to find out what happened.
 
-=head2 pos([$integer])
+=head2 size_report()
 
-Here, the [] indicate an optional parameter.
+Prints some statistics for the sizes of various integers (short, int, long, etc).
 
-Get or set the offset within the input string at which to start processing.
+See scripts/samples.pl and scripts/tiny.pl.
 
-See also the L</FAQ> and L</length([$integer])>.
+=head2 stack()
 
-'pos' is a parameter to L</new()>. See L</Constructor and Initialization> for details.
+Returns an arrayref of items which resulted from calling L</parse([$string])>. Each item
+is an array of 3 elements:
+
+=over 4
+
+=item o [0]: The name of this item
+
+The name is either 'token', or the name of the event which triggered recognition of this item
+in the input template.
+
+The name 'token' represents one of the characters listed in the first table in
+L<the docs for pack()|http://perldoc.perl.org/functions/pack.html>, not counting the '(' at the
+end of that table.
+
+Otherwise, this is the name of a lexeme of the BNF.
+
+=item o [1]: The name of the event
+
+An item of the BNF. This is provided in case [0] says 'token', and you wish to know which part
+of the BNF applies.
+
+
+=item o [2]: The substring (a few characters at most) in the input string which is the value of
+the lexeme identified by [1].
+
+=back
+
+For instance, in the template 'a3/AA*', there would be 6 items in the stack, each of 3 elements:
+
+=over 4
+
+=item o [0]: token, basic_set, a
+
+=item o [1]: number, number, 3
+
+=item o [2]: slash_literal, slash_literal, /
+
+=item o [3]: token, basic_set, A
+
+=item o [4]: token, basic_set, A
+
+=item o [5]: star, star, *
+
+=back
 
 =head2 template([$string])
 
@@ -1072,152 +796,17 @@ Get or set the string to be parsed.
 
 'template' is a parameter to L</new()>. See L</Constructor and Initialization> for details.
 
-=head2 tree()
+=head2 template_report
 
-Returns an object of type L<Tree>, which holds the parsed data.
+Get the string output from the parse.
 
-Obviously, it only makes sense to call C<tree()> after calling C<parse()>.
-
-See scripts/traverse.pl for sample code which processes this tree's nodes.
-
-=head2 tree2string($options, [$some_tree])
-
-Here, the [] represent an optional parameter.
-
-If $some_tree is not supplied, uses the calling object's tree ($self -> tree).
-
-Returns an arrayref of lines, suitable for printing. These lines do not end in "\n".
-
-Draws a nice ASCII-art representation of the tree structure.
-
-The tree looks like:
-
-	Root. Attributes: {# => "0"}
-	   |--- I. Attributes: {# => "1"}
-	   |   |--- J. Attributes: {# => "3"}
-	   |   |   |--- K. Attributes: {# => "3"}
-	   |   |--- J. Attributes: {# => "4"}
-	   |       |--- L. Attributes: {# => "5"}
-	   |           |--- M. Attributes: {# => "5"}
-	   |               |--- N. Attributes: {# => "5"}
-	   |                   |--- O. Attributes: {# => "5"}
-	   |--- H. Attributes: {# => "2"}
-	   |   |--- J. Attributes: {# => "3"}
-	   |   |   |--- K. Attributes: {# => "3"}
-	   |   |--- J. Attributes: {# => "4"}
-	   |       |--- L. Attributes: {# => "5"}
-	   |           |--- M. Attributes: {# => "5"}
-	   |               |--- N. Attributes: {# => "5"}
-	   |                   |--- O. Attributes: {# => "5"}
-	   |--- D. Attributes: {# => "6"}
-	   |   |--- F. Attributes: {# => "8"}
-	   |       |--- G. Attributes: {# => "8"}
-	   |--- E. Attributes: {# => "7"}
-	   |   |--- F. Attributes: {# => "8"}
-	   |       |--- G. Attributes: {# => "8"}
-	   |--- B. Attributes: {# => "9"}
-	       |--- C. Attributes: {# => "9"}
-
-Or, without attributes:
-
-	Root
-	   |--- I
-	   |   |--- J
-	   |   |   |--- K
-	   |   |--- J
-	   |       |--- L
-	   |           |--- M
-	   |               |--- N
-	   |                   |--- O
-	   |--- H
-	   |   |--- J
-	   |   |   |--- K
-	   |   |--- J
-	   |       |--- L
-	   |           |--- M
-	   |               |--- N
-	   |                   |--- O
-	   |--- D
-	   |   |--- F
-	   |       |--- G
-	   |--- E
-	   |   |--- F
-	   |       |--- G
-	   |--- B
-	       |--- C
-
-See scripts/samples.pl.
-
-Example usage:
-
-  print map("$_\n", @{$tree -> tree2string});
-
-Can be called with $some_tree set to any $node, and will print the tree assuming $node is the root.
-
-If you don't wish to supply options, use tree2string({}, $node).
-
-Possible keys in the $options hashref (which defaults to {}):
-
-=over 4
-
-=item o no_attributes => $Boolean
-
-If 1, the node's attributes are not included in the string returned.
-
-Default: 0 (include attributes).
-
-=back
-
-Calls L</node2string($options, $is_last_node, $node, $vert_dashes)>.
+See t/test.t.
 
 =head1 FAQ
 
 =head2 Where are the error messages and numbers described?
 
 See L</error_message()> and L</error_number()>.
-
-=head2 How do I escape delimiters?
-
-By backslash-escaping the first character of all open and close delimiters which appear in the
-text.
-
-As an example, if the delimiters are '<:' and ':>', this means you have to escape I<all> the '<'
-chars and I<all> the colons in the text.
-
-The backslash is preserved in the output.
-
-See t/escapes.t.
-
-=head2 Does this package support Unicode/UTF8?
-
-Yes. See t/escapes.t, t/multiple.quotes.t and t/utf8.t.
-
-=head2 Does this package handler Perl delimiters (e.g. q|..|, qq|..|, qr/../, qw/../)?
-
-See t/perl.delimiters.t.
-
-=head2 Warning: calling open() and close() after calling new
-
-Don't do that.
-
-To make the code work, you would have to manually call L</validate_open_close()>. But even then
-a lot of things would have to be re-initialized to give the code any hope of working.
-
-And that raises the question: Should the tree of text parsed so far be destroyed and re-initialized?
-
-=head2 What is the format of the 'open' and 'close' parameters to new()?
-
-Each of these parameters takes an arrayref as a value.
-
-The # of elements in the 2 arrayrefs must be the same.
-
-The 1st element in the 'open' arrayref is the 1st user-chosen opening delimiter, and the 1st
-element in the 'close' arrayref must be the corresponding closing delimiter.
-
-It is possible to use a delimiter which is part of another delimiter.
-
-See scripts/samples.pl. It uses both '<' and '<:' as opening delimiters and their corresponding
-closing delimiters are '>' and ':>'. Neat, huh?
 
 =head2 What are the possible values for the 'options' parameter to new()?
 
@@ -1227,8 +816,7 @@ Firstly, to make these constants available, you must say:
 
 Secondly, more detail on errors and warnings can be found at L</error_number()>.
 
-Thirdly, for usage of these option flags, see t/angle.brackets.t, t/colons.t, t/escapes.t,
-t/multiple.quotes.t, t/percents.t and scripts/samples.pl.
+Thirdly, for usage of these option flags, see scripts/*.pl.
 
 Now the flags themselves:
 
@@ -1264,101 +852,13 @@ It's tempting to call this option C<warnings>, but Perl already has C<use warnin
 
 It's value is 2.
 
-=item o overlap_is_fatal
+=item o ambiguity_is_fatal
 
-This means overlapping delimiters cause a fatal error.
-
-So, setting C<overlap_is_fatal> means '{Bold [Italic}]' would be a fatal error.
-
-I use this example since it gives me the opportunity to warn you, this will I<not> do what you want
-if you try to use the delimiters of '<' and '>' for HTML. That is, '<i><b>Bold Italic</i></b>' is
-not an error because what overlap are '<b>' and '</i>' BUT THEY ARE NOT TAGS. The tags are '<' and
-'>', ok? See also t/html.t.
+This makes L</error_number()> return 1 rather than -1.
 
 It's value is 4.
 
-=item o nesting_is_fatal
-
-This means nesting of identical opening delimiters is fatal.
-
-So, using C<nesting_is_fatal> means 'a <: b <: c :> d :> e' would be a fatal error.
-
-It's value is 8.
-
-=item o ambiguity_is_fatal
-
-This makes L</error_number()> return 3 rather than -3.
-
-It's value is 16.
-
-=item o exhaustion_is_fatal
-
-This makes L</error_number()> return 6 rather than -6.
-
-It's value is 32.
-
 =back
-
-=head2 How do I print the tree built by the parser?
-
-See L</Synopsis>.
-
-=head2 How do I make use of the tree built by the parser?
-
-See scripts/traverse.pl. It is a copy of t/html.t with tree-walking code instead of test code.
-
-=head2 How is the parsed data held in RAM?
-
-The parsed output is held in a tree managed by L<Tree>.
-
-The tree always has a root node, which has nothing to do with the input data. So, even an empty
-imput string will produce a tree with 1 node. This root has an empty hashref associated with it.
-
-Nodes have a name and a hashref of attributes.
-
-The name indicates the type of node. Names are one of these literals:
-
-=over 4
-
-=item o close
-
-=item o open
-
-=item o root
-
-=item o text
-
-=back
-
-For 'open' and 'close', the delimiter is given by the value of the 'text' key in the hashref.
-
-The (key => value) pairs in the hashref are:
-
-=over 4
-
-=item o text => $string
-
-If the node name is 'open' or 'close', $string is the delimiter.
-
-If the node name is 'text', $string is the verbatim text from the document.
-
-Verbatim means, for example, that backslashes in the input are preserved.
-
-=back
-
-Try:
-
-	perl -Ilib scripts/samples.pl info
-
-=head2 How is HTML/XML handled?
-
-The tree does not preserve the nested nature of HTML/XML.
-
-Post-processing (valid) HTML could easily generate another view of the data.
-
-But anyway, to get perfect HTML you'd be grabbing the output of L<Marpa::R2::HTML>, right?
-
-See scripts/traverse.pl and t/html.t for a trivial HTML parser.
 
 =head2 What is the homepage of Marpa?
 
@@ -1374,7 +874,11 @@ This runs both standard and author tests:
 
 =head1 See Also
 
-L<Tree> and L<Tree::Persist>.
+L<The docs for pack()|http://perldoc.perl.org/functions/pack.html>.
+
+L<The pack()/unpack() tutorial|http://perldoc.perl.org/perlpacktut.html>.
+
+L<The docs for unpack()|http://perldoc.perl.org/functions/unpack.html>.
 
 =head1 Machine-Readable Change Log
 
