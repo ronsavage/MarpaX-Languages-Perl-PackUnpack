@@ -3,42 +3,35 @@
 use strict;
 use warnings;
 
-use Text::Balanced::Marpa ':constants';
+use MarpaX::Languages::Perl::PackUnpack ':constants';
 
 # -----------
 
-my($count)  = 0;
-my($parser) = Text::Balanced::Marpa -> new
-(
-	open    => ['<:' ,'[%'],
-	close   => [':>', '%]'],
-	options => nesting_is_fatal | print_warnings,
-);
-my(@text) =
-(
-	q|<: a :>|,
-	q|a [% b <: c :> d %] e|,
-	q|a <: b <: c :> d :> e|, # nesting_is_fatal triggers an error here.
-);
+my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => print_warnings);
 
+my($count);
 my($result);
 
-for my $text (@text)
+for my $text ('n/a* w/a2')
 {
-	$count++;
+	print "Parsing: $text. \n";
 
-	print "Parsing |$text|\n";
+	$result = $parser -> parse($text);
 
-	$result = $parser -> parse(\$text);
-
-	print join("\n", @{$parser -> tree2string}), "\n";
 	print "Parse result: $result (0 is success)\n";
+	print 'Template: ', $parser -> template_report, ". \n";
 
-	if ($count == 3)
+	$count = 0;
+
+	for my $item (@{$parser -> stack})
 	{
-		print "Deliberate error: Failed to parse |$text|\n";
-		print 'Error number: ', $parser -> error_number, '. Error message: ', $parser -> error_message, "\n";
+		$count++;
+
+		print "$count: ", join(', ', @$item), "\n";
 	}
 
-	print '-' x 50, "\n";
 }
+
+print "\n";
+
+$parser -> size_report;

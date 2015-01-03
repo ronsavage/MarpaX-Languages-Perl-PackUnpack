@@ -544,11 +544,67 @@ C<MarpaX::Languages::Perl::PackUnpack> - Extract delimited text sequences from s
 
 =head1 Synopsis
 
+	#!/usr/bin/env perl
+
+	use strict;
+	use warnings;
+
+	use MarpaX::Languages::Perl::PackUnpack ':constants';
+
+	# -----------
+
+	my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => print_warnings);
+
+	my($count);
+	my($result);
+
+	for my $text ('n/a* w/a2')
+	{
+		print "Parsing: $text. \n";
+
+		$result = $parser -> parse($text);
+
+		print "Parse result: $result (0 is success)\n";
+		print 'Template: ', $parser -> template_report, ". \n";
+
+		$count = 0;
+
+		for my $item (@{$parser -> stack})
+		{
+			$count++;
+
+			print "$count: ", join(', ', @$item), "\n";
+		}
+
+	}
+
+	print "\n";
+
+	$parser -> size_report;
 
 See scripts/synopsis.pl.
 
 This is the printout of synopsis.pl:
 
+	Parsing: n/a* w/a2.
+	Parse result: 0 (0 is success)
+	Template: n/a*w/a2.
+	1: token, bang_only_set, n
+	2: slash_literal, slash_literal, /
+	3: token, basic_set, a
+	4: star, star, *
+	5: token, basic_set, w
+	6: slash_literal, slash_literal, /
+	7: token, basic_set, a
+	8: number, number, 2
+
+	Byte order: 12345678. Little endian: 1. Big endian: 0.
+	Some template codes and their size requirements in bytes:
+	Signed  Unsigned  Name        Byte length in Perl
+	s!      S!        short       2  $Config{shortsize}
+	i!      I!        int         4  $Config{intsize}
+	l!      L!        long        8  $Config{longsize}
+	q!      Q!        longlong    8  $Config{longlongsize}
 
 =head1 Description
 
