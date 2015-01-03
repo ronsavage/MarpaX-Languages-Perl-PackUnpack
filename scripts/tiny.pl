@@ -12,6 +12,8 @@ my(@text)   =
 (
 	q|@1A((@2A)@3A)|,
 	q|(sl)<|,
+	q|a3/A A*|,
+	q|n/a* w/a2|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 
@@ -31,8 +33,7 @@ for my $text (@text)
 	}
 
 	print "Parse result: $result (0 is success)\n";
-	#print "tree2string: \n";
-	#print join("\n", @{$parser -> tree2string}), "\n";
+	print join("\n", @{$parser -> tree2string}), "\n";
 	print 'pack_report: ', $parser -> pack_report, "\n";
 }
 

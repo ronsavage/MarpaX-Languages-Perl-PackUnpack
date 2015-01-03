@@ -349,7 +349,6 @@ sub pack_report
 	my($result) = '';
 
 	my($attributes);
-	my($indent);
 	my($text);
 
 	for my $node ($self -> pack_tree -> traverse)
@@ -358,7 +357,6 @@ sub pack_report
 
 		$attributes = $node -> meta;
 		$text       = $$attributes{text};
-		$indent     = $node -> depth - 1;
 		$result     .= $text;
 	}
 
