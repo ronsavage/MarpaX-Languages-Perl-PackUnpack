@@ -602,7 +602,7 @@ sub tree2string
 
 	for my $i (0 .. $#nodes)
 	{
-	       push @out, $self -> node2string($options, $i == $#nodes, $nodes[$i], \@vert_dashes);
+		push @out, $self -> node2string($options, $i == $#nodes, $nodes[$i], \@vert_dashes);
 	}
 
 	return [@out];
@@ -684,28 +684,25 @@ C<MarpaX::Languages::Perl::PackUnpack> - Extract delimited text sequences from s
 	# -----------
 
 	my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => print_warnings);
+	my(@text)   =
+	(
+		q|n/a* # Newline
+	w/a2|,
+		q|n/a* w/a2|,
+		q|i9pl|,
+	);
 
-	my($count);
 	my($result);
 
-	for my $text ('n/a* w/a2')
+	for my $text (@text)
 	{
 		print "Parsing: $text. \n";
 
 		$result = $parser -> parse($text);
 
+		print join("\n", @{$parser -> tree2string}), "\n";
 		print "Parse result: $result (0 is success)\n";
 		print 'Template: ', $parser -> template_report, ". \n";
-
-		$count = 0;
-
-		for my $item (@{$parser -> stack})
-		{
-			$count++;
-
-			print "$count: ", join(', ', @$item), "\n";
-		}
-
 	}
 
 	print "\n";
@@ -716,17 +713,39 @@ See scripts/synopsis.pl.
 
 This is the printout of synopsis.pl:
 
-	Parsing: n/a* w/a2.
+	Parsing: n/a* # Newline
+	w/a2.
+	root. Attributes: {}
+	   |--- token. Attributes: {event => "bang_only_set", text => "n"}
+	   |   |--- slash_literal. Attributes: {event => "slash_literal", text => "/"}
+	   |   |--- token. Attributes: {event => "basic_set", text => "a"}
+	   |   |   |--- star. Attributes: {event => "star", text => "*"}
+	   |   |--- token. Attributes: {event => "basic_set", text => "w"}
+	   |   |   |--- slash_literal. Attributes: {event => "slash_literal", text => "/"}
+	   |   |--- token. Attributes: {event => "basic_set", text => "a"}
+	       |   |--- number. Attributes: {event => "number", text => "2"}
 	Parse result: 0 (0 is success)
-	Template: n/a*w/a2.
-	1: token, bang_only_set, n
-	2: slash_literal, slash_literal, /
-	3: token, basic_set, a
-	4: star, star, *
-	5: token, basic_set, w
-	6: slash_literal, slash_literal, /
-	7: token, basic_set, a
-	8: number, number, 2
+	Template: n/a* w/a2.
+	Parsing: n/a* w/a2.
+	root. Attributes: {}
+	   |--- token. Attributes: {event => "bang_only_set", text => "n"}
+	   |   |--- slash_literal. Attributes: {event => "slash_literal", text => "/"}
+	   |   |--- token. Attributes: {event => "basic_set", text => "a"}
+	   |   |   |--- star. Attributes: {event => "star", text => "*"}
+	   |   |--- token. Attributes: {event => "basic_set", text => "w"}
+	   |   |   |--- slash_literal. Attributes: {event => "slash_literal", text => "/"}
+	   |   |--- token. Attributes: {event => "basic_set", text => "a"}
+	       |   |--- number. Attributes: {event => "number", text => "2"}
+	Parse result: 0 (0 is success)
+	Template: n/a* w/a2.
+	Parsing: i9pl.
+	root. Attributes: {}
+	   |--- token. Attributes: {event => "bang_and_endian_set", text => "i"}
+	   |   |--- number. Attributes: {event => "number", text => "9"}
+	   |   |--- token. Attributes: {event => "endian_only_set", text => "p"}
+	       |--- token. Attributes: {event => "bang_and_endian_set", text => "l"}
+	Parse result: 0 (0 is success)
+	Template: i9 p l.
 
 	Byte order: 12345678. Little endian: 1. Big endian: 0.
 	Some template codes and their size requirements in bytes:
