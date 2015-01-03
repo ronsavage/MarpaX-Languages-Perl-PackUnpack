@@ -61,7 +61,7 @@ my(@text)   =
 	q|%32 W*|,
 	q|Z8 Z8 Z16 L|,
 	q|sx2l|,
-	q|s10 # Comment and newline inside template
+	qq|s10 # Comment and newline inside template
 j10|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);

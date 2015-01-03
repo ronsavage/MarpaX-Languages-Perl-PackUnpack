@@ -10,9 +10,9 @@ use MarpaX::Languages::Perl::PackUnpack ':constants';
 my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => print_warnings);
 my(@text)   =
 (
-	q|n/a* # Newline
+	qq|n/a* # Newline
 w/a2|,
-	q|n/a* w/a2|,
+	q|a3/A A*|,
 	q|i9pl|,
 );
 
@@ -27,8 +27,10 @@ for my $text (@text)
 	print join("\n", @{$parser -> tree2string}), "\n";
 	print "Parse result: $result (0 is success)\n";
 	print 'Template: ', $parser -> template_report, ". \n";
+	print '-' x 50, "\n";
 }
 
 print "\n";
+print "Size report: \n";
 
 $parser -> size_report;

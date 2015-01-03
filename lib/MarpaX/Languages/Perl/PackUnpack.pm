@@ -545,7 +545,7 @@ sub size_report
 	);
 
 	print "Byte order: $Config{byteorder}. Little endian: $is_little_endian. Big endian: $is_big_endian. \n";
-	print "Some template codes and their size requirements in bytes: \n";
+	print "Some template codes and their size requirements: \n";
 
 	my($format) = "%-6s  %-8s  %-10s  %-s  %-s\n";
 
@@ -670,7 +670,7 @@ sub _validate_event
 
 =head1 NAME
 
-C<MarpaX::Languages::Perl::PackUnpack> - Extract delimited text sequences from strings
+C<MarpaX::Languages::Perl::PackUnpack> - Parse the templates used in pack() and unpack()
 
 =head1 Synopsis
 
@@ -686,9 +686,9 @@ C<MarpaX::Languages::Perl::PackUnpack> - Extract delimited text sequences from s
 	my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => print_warnings);
 	my(@text)   =
 	(
-		q|n/a* # Newline
+		qq|n/a* # Newline
 	w/a2|,
-		q|n/a* w/a2|,
+		q|a3/A A*|,
 		q|i9pl|,
 	);
 
@@ -703,6 +703,7 @@ C<MarpaX::Languages::Perl::PackUnpack> - Extract delimited text sequences from s
 		print join("\n", @{$parser -> tree2string}), "\n";
 		print "Parse result: $result (0 is success)\n";
 		print 'Template: ', $parser -> template_report, ". \n";
+		print '-' x 50, "\n";
 	}
 
 	print "\n";
@@ -711,7 +712,7 @@ C<MarpaX::Languages::Perl::PackUnpack> - Extract delimited text sequences from s
 
 See scripts/synopsis.pl.
 
-This is the printout of synopsis.pl:
+This is the output of synopsis.pl:
 
 	Parsing: n/a* # Newline
 	w/a2.
@@ -726,18 +727,18 @@ This is the printout of synopsis.pl:
 	       |   |--- number. Attributes: {event => "number", text => "2"}
 	Parse result: 0 (0 is success)
 	Template: n/a* w/a2.
-	Parsing: n/a* w/a2.
+	--------------------------------------------------
+	Parsing: a3/A A*.
 	root. Attributes: {}
-	   |--- token. Attributes: {event => "bang_only_set", text => "n"}
+	   |--- token. Attributes: {event => "basic_set", text => "a"}
+	   |   |--- number. Attributes: {event => "number", text => "3"}
 	   |   |--- slash_literal. Attributes: {event => "slash_literal", text => "/"}
-	   |   |--- token. Attributes: {event => "basic_set", text => "a"}
-	   |   |   |--- star. Attributes: {event => "star", text => "*"}
-	   |   |--- token. Attributes: {event => "basic_set", text => "w"}
-	   |   |   |--- slash_literal. Attributes: {event => "slash_literal", text => "/"}
-	   |   |--- token. Attributes: {event => "basic_set", text => "a"}
-	       |   |--- number. Attributes: {event => "number", text => "2"}
+	   |   |--- token. Attributes: {event => "basic_set", text => "A"}
+	   |   |--- token. Attributes: {event => "basic_set", text => "A"}
+	       |   |--- star. Attributes: {event => "star", text => "*"}
 	Parse result: 0 (0 is success)
-	Template: n/a* w/a2.
+	Template: a3/A A*.
+	--------------------------------------------------
 	Parsing: i9pl.
 	root. Attributes: {}
 	   |--- token. Attributes: {event => "bang_and_endian_set", text => "i"}
@@ -746,9 +747,11 @@ This is the printout of synopsis.pl:
 	       |--- token. Attributes: {event => "bang_and_endian_set", text => "l"}
 	Parse result: 0 (0 is success)
 	Template: i9 p l.
+	--------------------------------------------------
 
+	Size report:
 	Byte order: 12345678. Little endian: 1. Big endian: 0.
-	Some template codes and their size requirements in bytes:
+	Some template codes and their size requirements:
 	Signed  Unsigned  Name        Byte length in Perl
 	s!      S!        short       2  $Config{shortsize}
 	i!      I!        int         4  $Config{intsize}
@@ -757,8 +760,12 @@ This is the printout of synopsis.pl:
 
 =head1 Description
 
-L<MarpaX::Languages::Perl::PackUnpack> provides a L<Marpa::R2>-based parser for extracting delimited text
-sequences from strings.
+L<MarpaX::Languages::Perl::PackUnpack> provides a L<Marpa::R2>-based parser for parsing the
+templates used in pack() and unpack().
+
+The parsed details are stored in a L<Tree>, and can be accessed via the methods
+L</tree2string($options, [$some_tree])> and L</template_report>. The tree itself can be accessed
+with the method L</tree()>.
 
 =head1 Distributions
 
@@ -1062,9 +1069,17 @@ See t/test.t.
 
 Returns an object of type L<Tree>, which holds the parsed data.
 
-Obviously, it only makes sense to call C<tree()> after calling C<parse()>.
+Obviously, it only makes sense to call C<tree()> after calling L</parse([$string])>.
 
 See scripts/traverse.pl for sample code which processes this tree's nodes.
+
+If you wish to save the tree before calling L</parse([$string])> again, call:
+
+	my($tree) = $parser -> tree -> clone();
+
+Later you can then do this to process $tree instead of $parser's tree:
+
+	print join("\n", @{$parser -> tree2string({}, $tree)}), "\n";
 
 =head2 tree2string($options, [$some_tree])
 
