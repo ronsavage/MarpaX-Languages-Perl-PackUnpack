@@ -14,16 +14,16 @@ my(@text)   =
 (
 	q|j|,
 	q|s!10|,
-	q|s<l<|,
+	q|s< l<|,
 	q|s![*]|,
-	q|C0U4|,
-	q|%32W*|,
+	q|C0 U4|,
+	q|%32 W*|,
 	q|j<![10]|,
-	q|a3/AA*|,
-	q|(sl)<|,
-	q|n/a*w/a2|,
-	q|d[x![d]]|,
-	q|@1A((@2A)@3A)|,
+	q|a3/A A*|,
+	q|( s l )<|,
+	q|n/a* w/a2|,
+	q|d[ x![ d]]|,
+	q|@1 A ( ( @2 A ) @3 A )|,
 	q|s10 # Comment and newline inside template
 j10|,
 );
@@ -40,9 +40,9 @@ for my $text (@text)
 	ok($result == 0, "Parsed:    $text");
 
 	$retrieved = $parser -> template_report;
-	$text      = 's10j10' if ($text =~ /^s10/);
+	$text      = 's10 j10' if ($text =~ /^s10/);
 
-	ok($text eq $retrieved, "Retrieved: $text");
+	ok($text eq $retrieved, "Retrieved: <$text> <$retrieved>");
 }
 
 done_testing($count);

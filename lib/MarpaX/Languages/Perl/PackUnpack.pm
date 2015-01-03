@@ -20,6 +20,8 @@ use Marpa::R2;
 
 use Moo;
 
+use Tree;
+
 use Types::Standard qw/Any ArrayRef HashRef Int Str/;
 
 use Try::Tiny;
@@ -104,6 +106,14 @@ has template =>
 	required => 0,
 );
 
+has tree =>
+(
+	default  => sub{return ''},
+	is       => 'rw',
+	isa      => Any,
+	required => 0,
+);
+
 our $VERSION = '1.00';
 
 # ------------------------------------------------
@@ -145,7 +155,7 @@ character				::= basic_set										repeat_token	rank => 1
 							| bang_only_set			bang_token				repeat_token	rank => 2
 							| bang_or_endian_set	bang_or_endian_token	repeat_token	rank => 3
 							| endian_only_set		endian_token			repeat_token	rank => 4
-							| parentheses									repeat_special	rank => 5
+							| parentheses_set								repeat_special	rank => 5
 
 repeat_token			::= repeat_item
 							| repeat_item slash_literal repeat_item
@@ -215,8 +225,8 @@ number					~ [\d]+
 :lexeme					~ open_bracket			pause => before		event => open_bracket
 open_bracket			~ '['
 
-:lexeme					~ parentheses			pause => before		event => parentheses
-parentheses				~ [()]
+:lexeme					~ parentheses_set		pause => before		event => parentheses_set
+parentheses_set			~ [()]
 
 :lexeme					~ percent_literal		pause => before		event => percent_literal
 percent_literal			~ '%'
@@ -274,13 +284,37 @@ END_OF_GRAMMAR
 sub _add_daughter
 {
 	my($self, $node_name, $event_name, $lexeme) = @_;
-	my($stack) = $self -> stack;
+	my($stack)  = $self -> stack;
+	my($node)   = Tree -> new($node_name);
 
-	push @$stack, [$node_name, $event_name, $lexeme];
+	$node -> meta({event => $event_name, text => $lexeme});
 
-	$self -> stack($stack);
+	$$stack[$#$stack] -> add_child({}, $node);
 
 } # End of _add_daughter.
+
+# -----------------------------------------------
+
+sub format_node
+{
+	my($self, $options, $node) = @_;
+	my($s) = $node -> value;
+	$s     .= '. Attributes: ' . $self -> hashref2string($node -> meta) if (! $$options{no_attributes});
+
+	return $s;
+
+} # End of format_node.
+
+# -----------------------------------------------
+
+sub hashref2string
+{
+	my($self, $hashref) = @_;
+	$hashref ||= {};
+
+	return '{' . join(', ', map{qq|$_ => "$$hashref{$_}"|} sort keys %$hashref) . '}';
+
+} # End of hashref2string.
 
 # ------------------------------------------------
 
@@ -296,13 +330,35 @@ sub next_few_chars
 
 } # End of next_few_chars.
 
+# -----------------------------------------------
+
+sub node2string
+{
+	my($self, $options, $is_last_node, $node, $vert_dashes) = @_;
+	my($depth)         = $node -> depth;
+	my($sibling_count) = defined $node -> is_root ? 1 : scalar $node -> parent -> children;
+	my($offset)        = ' ' x 4;
+	my(@indent)        = map{$$vert_dashes[$_] || $offset} 0 .. $depth - 1;
+	@$vert_dashes      =
+	(
+		@indent,
+		($sibling_count == 0 ? $offset : '   |'),
+	);
+
+	$indent[1] = '    ' if ($is_last_node && ($depth > 1) );
+
+	return join('', @indent[1 .. $#indent]) . ($depth ? '   |--- ' : '') . $self -> format_node($options, $node);
+
+} # End of node2string.
+
 # ------------------------------------------------
 
 sub parse
 {
 	my($self, $string) = @_;
-	$self -> template($string) if (defined $string);
 
+	$self -> stack([]);
+	$self -> template($string) if (defined $string);
 	$self -> recce
 	(
 		Marpa::R2::Scanless::R -> new
@@ -312,6 +368,12 @@ sub parse
 		})
 	);
 
+	# Since $self -> stack has not been initialized yet,
+	# we can't call _add_pack_daughter() until after this statement.
+
+	$self -> tree(Tree -> new('root') );
+	$self -> stack([$self -> tree]);
+
 	# Return 0 for success and 1 for failure.
 
 	my($result) = 0;
@@ -320,7 +382,7 @@ sub parse
 
 	try
 	{
-		if (defined (my $value = $self -> _process_pack) )
+		if (defined (my $value = $self -> _process) )
 		{
 		}
 		else
@@ -345,7 +407,20 @@ sub parse
 
 # ------------------------------------------------
 
-sub _process_pack
+sub _pop_stack
+{
+	my($self)  = @_;
+	my($stack) = $self -> stack;
+
+	pop @$stack;
+
+	$self -> stack($stack);
+
+} # End of _pop_stack.
+
+# ------------------------------------------------
+
+sub _process
 {
 	my($self)        = @_;
 	my($string)      = $self -> template || ''; # Allow for undef.
@@ -359,9 +434,8 @@ sub _process_pack
 		bang_only_set       => 1,
 		basic_set           => 1,
 		endian_only_set     => 1,
+		parentheses_set		=> 1,
 	);
-
-	$self -> stack([]);
 
 	if ($self -> options & debug)
 	{
@@ -398,12 +472,19 @@ sub _process_pack
 
 		print sprintf($format, $event_name, $start, $span, $pos, $lexeme, '-') if ($self -> options & debug);
 
-		$node_name = ($event_name =~ /_set$/) ? 'token' : $event_name;
+		$node_name = $token_event{$event_name} ? 'token' : $event_name;
+
+		if ( ($node_name eq 'token') && ($#{$self -> stack} > 1) )
+		{
+			$self -> _pop_stack;
+		}
 
 		$self -> _add_daughter($node_name, $event_name, $lexeme);
 
+		$self -> _push_stack if ($node_name eq 'token');
+
 		$last_event = $event_name;
-    }
+	}
 
 	if (my $status = $self -> recce -> ambiguous)
 	{
@@ -432,7 +513,21 @@ sub _process_pack
 
 	return $self -> recce -> value;
 
-} # End of _process_pack.
+} # End of _process.
+
+# ------------------------------------------------
+
+sub _push_stack
+{
+	my($self)      = @_;
+	my($stack)     = $self -> stack;
+	my(@daughters) = $$stack[$#$stack] -> children;
+
+	push @$stack, $daughters[$#daughters];
+
+	$self -> stack($stack);
+
+} # End of _push_stack.
 
 # ------------------------------------------------
 
@@ -440,7 +535,7 @@ sub size_report
 {
 	my($self)             = @_;
 	my($is_little_endian) = unpack('c',  pack('s', 1) );
-    my($is_big_endian)    = unpack('xc', pack('s', 1) );
+	my($is_big_endian)    = unpack('xc', pack('s', 1) );
 	my(%size)             =
 	(
 		1 => ['short',    's!', 'S!', $Config{shortsize}, '$Config{shortsize}'],
@@ -467,17 +562,52 @@ sub size_report
 
 sub template_report
 {
-	my($self)   = @_;
-	my($result) = '';
+	my($self)     = @_;
+	my($count)    = 0;
+	my($previous) = '';
+	my($result)   = '';
 
-	for my $node (@{$self -> stack})
+	my($attributes);
+	my($text);
+
+	for my $node ($self -> tree -> traverse)
 	{
-		$result .= $$node[2];
+		next if ($node -> is_root);
+
+		$count++;
+
+		$attributes = $node -> meta;
+		$text       = $$attributes{text};
+		$result     .= ' ' if ( ($count > 1) && ($previous ne '/') && ($node -> value eq 'token') );
+		$result     .= $text;
+		$previous   = $text;
 	}
 
 	return $result;
 
 } # End of template_report.
+
+# -----------------------------------------------
+
+sub tree2string
+{
+	my($self, $options, $tree) = @_;
+	$options                   ||= {};
+	$$options{no_attributes}   ||= 0;
+	$tree                      ||= $self -> tree;
+	my(@nodes)                 = $tree -> traverse;
+
+	my(@out);
+	my(@vert_dashes);
+
+	for my $i (0 .. $#nodes)
+	{
+	       push @out, $self -> node2string($options, $i == $#nodes, $nodes[$i], \@vert_dashes);
+	}
+
+	return [@out];
+
+} # End of tree2string.
 
 # ------------------------------------------------
 
@@ -737,6 +867,36 @@ This message can never be just a warning message.
 
 See L</error_message()>.
 
+=head2 format_node($options, $node)
+
+Returns a string consisting of the node's name and, optionally, it's attributes.
+
+Possible keys in the $options hashref:
+
+=over 4
+
+=item o no_attributes => $Boolean
+
+If 1, the node's attributes are not included in the string returned.
+
+Default: 0 (include attributes).
+
+=back
+
+Calls L</hashref2string($hashref)>.
+
+Called by L</node2string($options, $is_last_node, $node, $vert_dashes)>.
+
+You would not normally call this method.
+
+If you don't wish to supply options, use format_node({}, $node).
+
+=head2 hashref2string($hashref)
+
+Returns the given hashref as a string.
+
+Called by L</format_node($options, $node)>.
+
 =head2 known_events()
 
 Returns a hashref where the keys are event names and the values are 1.
@@ -758,6 +918,28 @@ Here, the [] indicate an optional parameter.
 Get or set the number of characters called 'the next few chars', which are printed during debugging.
 
 'next_few_limit' is a parameter to L</new()>. See L</Constructor and Initialization> for details.
+
+=head2 node2string($options, $is_last_node, $node, $vert_dashes)
+
+Returns a string of the node's name and attributes, with a leading indent, suitable for printing.
+
+Possible keys in the $options hashref:
+
+=over 4
+
+=item o no_attributes => $Boolean
+
+If 1, the node's attributes are not included in the string returned.
+
+Default: 0 (include attributes).
+
+=back
+
+Ignore the parameter $vert_dashes. The code uses it as temporary storage.
+
+Calls L</format_node($options, $node)>.
+
+Called by L</tree2string($options, [$some_tree])>.
 
 =head2 options([$bit_string])
 
@@ -820,7 +1002,6 @@ Otherwise, this is the name of a lexeme of the BNF.
 An item of the BNF. This is provided in case [0] says 'token', and you wish to know which part
 of the BNF applies.
 
-
 =item o [2]: The substring (a few characters at most) in the input string which is the value of
 the lexeme identified by [1].
 
@@ -857,6 +1038,103 @@ Get or set the string to be parsed.
 Get the string output from the parse.
 
 See t/test.t.
+
+=head2 tree()
+
+Returns an object of type L<Tree>, which holds the parsed data.
+
+Obviously, it only makes sense to call C<tree()> after calling C<parse()>.
+
+See scripts/traverse.pl for sample code which processes this tree's nodes.
+
+=head2 tree2string($options, [$some_tree])
+
+Here, the [] represent an optional parameter.
+
+If $some_tree is not supplied, uses the calling object's tree ($self -> tree).
+
+Returns an arrayref of lines, suitable for printing. These lines do not end in "\n".
+
+Draws a nice ASCII-art representation of the tree structure.
+
+The tree looks like:
+
+	Root. Attributes: {# => "0"}
+	   |--- I. Attributes: {# => "1"}
+	   |   |--- J. Attributes: {# => "3"}
+	   |   |   |--- K. Attributes: {# => "3"}
+	   |   |--- J. Attributes: {# => "4"}
+	   |       |--- L. Attributes: {# => "5"}
+	   |           |--- M. Attributes: {# => "5"}
+	   |               |--- N. Attributes: {# => "5"}
+	   |                   |--- O. Attributes: {# => "5"}
+	   |--- H. Attributes: {# => "2"}
+	   |   |--- J. Attributes: {# => "3"}
+	   |   |   |--- K. Attributes: {# => "3"}
+	   |   |--- J. Attributes: {# => "4"}
+	   |       |--- L. Attributes: {# => "5"}
+	   |           |--- M. Attributes: {# => "5"}
+	   |               |--- N. Attributes: {# => "5"}
+	   |                   |--- O. Attributes: {# => "5"}
+	   |--- D. Attributes: {# => "6"}
+	   |   |--- F. Attributes: {# => "8"}
+	   |       |--- G. Attributes: {# => "8"}
+	   |--- E. Attributes: {# => "7"}
+	   |   |--- F. Attributes: {# => "8"}
+	   |--- B. Attributes: {# => "9"}
+	       |--- C. Attributes: {# => "9"}
+
+Or, without attributes:
+
+	Root
+	   |--- I
+	   |   |--- J
+	   |   |   |--- K
+	   |   |--- J
+	   |       |--- L
+	   |           |--- M
+	   |               |--- N
+	   |                   |--- O
+	   |--- H
+	   |   |--- J
+	   |   |   |--- K
+	   |   |--- J
+	   |       |--- L
+	   |           |--- M
+	   |               |--- N
+	   |                   |--- O
+	   |--- D
+	   |   |--- F
+	   |       |--- G
+	   |--- E
+	   |   |--- F
+	   |       |--- G
+	   |--- B
+	       |--- C
+
+See scripts/samples.pl.
+
+Example usage:
+
+	print map("$_\n", @{$tree -> tree2string});
+
+Can be called with $some_tree set to any $node, and will print the tree assuming $node is the root.
+
+If you don't wish to supply options, use tree2string({}, $node).
+
+Possible keys in the $options hashref (which defaults to {}):
+
+=over 4
+
+=item o no_attributes => $Boolean
+
+If 1, the node's attributes are not included in the string returned.
+
+Default: 0 (include attributes).
+
+=back
+
+Calls L</node2string($options, $is_last_node, $node, $vert_dashes)>.
 
 =head1 FAQ
 
@@ -916,6 +1194,35 @@ It's value is 4.
 
 =back
 
+=head2 How do I print the tree built by the parser?
+
+See L</Synopsis>.
+
+=head2 How do I make use of the tree built by the parser?
+
+See scripts/traverse.pl. It is a copy of t/html.t with tree-walking code instead of test code.
+
+=head2 How is the parsed data held in RAM?
+
+The parsed output is held in a tree managed by L<Tree>.
+
+The tree always has a root node, which has nothing to do with the input data. So, even an empty
+imput string will produce a tree with 1 node. This root has an empty hashref associated with it.
+
+Nodes have a name and a hashref of attributes.
+
+The name indicates the type of node. Names are one of these literals:
+
+=over 4
+
+=item o close
+
+=item o open
+
+=item o root
+
+=back
+
 =head2 What is the homepage of Marpa?
 
 L<http://savage.net.au/Marpa.html>.
@@ -935,6 +1242,8 @@ L<The docs for pack()|http://perldoc.perl.org/functions/pack.html>.
 L<The pack()/unpack() tutorial|http://perldoc.perl.org/perlpacktut.html>.
 
 L<The docs for unpack()|http://perldoc.perl.org/functions/unpack.html>.
+
+L<Tree> and L<Tree::Persist>.
 
 =head1 Machine-Readable Change Log
 

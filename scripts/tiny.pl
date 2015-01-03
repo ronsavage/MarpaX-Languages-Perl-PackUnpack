@@ -10,11 +10,8 @@ use MarpaX::Languages::Perl::PackUnpack ':constants';
 my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => nothing_is_fatal | debug);
 my(@text)   =
 (
-	q|n/a* # Newline
-w/a2|,
-	q|aaaa|,
-	q|i9pl|,
-	q|a3/AA*|,
+	q|(sl)|,
+	q|@1A((@2A)@3A)|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 
@@ -34,7 +31,8 @@ for my $text (@text)
 	}
 
 	print "Parse result: $result (0 is success)\n";
-	print 'Template: ', $parser -> template_report, ". \n";
+	print join("\n", @{$parser -> tree2string}), "\n";
+	print 'Template: ', $parser -> template_report, "\n";
 }
 
 print "\n";
@@ -45,7 +43,3 @@ for my $key (sort keys %count)
 {
 	print sprintf("%-7s: %3d\n", ucfirst $key, $count{$key});
 }
-
-print "\n";
-
-$parser -> size_report;
