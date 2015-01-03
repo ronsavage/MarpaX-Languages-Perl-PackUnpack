@@ -7,13 +7,11 @@ use MarpaX::Languages::Perl::PackUnpack ':constants';
 
 # -----------
 
-my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => nothing_is_fatal);
+my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => nothing_is_fatal | debug);
 my(@text)   =
 (
-	q|@1A((@2A)@3A)|,
-	q|(sl)<|,
-	q|a3/A A*|,
 	q|n/a* w/a2|,
+	q|%32W*|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 

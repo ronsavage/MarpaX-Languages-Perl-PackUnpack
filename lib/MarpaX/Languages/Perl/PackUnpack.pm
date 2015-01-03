@@ -134,7 +134,7 @@ lexeme default			= latm => 1
 
 :start					::= template
 
-template				::= character+
+template				::= item+
 
 # The reason for the rank clauses is to handle cases like 'j'. Because that letter is in
 # both bang_or_endian_set and endian_only_set, the parse is ambiguous, and returns a forest
@@ -145,6 +145,11 @@ template				::= character+
 # AFAIK any ranks will do, as long as they are different.
 # BTW: These ranks only work because I've used (ranking_method => 'high_rule_only')
 # in the call to the constructor Marpa::R2::Scanless::R -> new().
+
+item					::= prefix character
+
+prefix					::=
+prefix					::= percent_literal number
 
 character				::= basic_set										repeat_token	rank => 1
 							| bang_only_set			bang_token				repeat_token	rank => 2
@@ -214,11 +219,14 @@ endian_literal			~ [><]
 :lexeme					~ endian_only_set		pause => before		event => endian_only_set
 endian_only_set			~ [qQjJfFdDpP]
 
+:lexeme					~ number				pause => before		event => number
+number					~ [\d]+
+
 :lexeme					~ open_bracket			pause => before		event => open_bracket
 open_bracket			~ '['
 
-:lexeme					~ number				pause => before		event => number
-number					~ [\d]+
+:lexeme					~ percent_literal		pause => before		event => percent_literal
+percent_literal			~ '%'
 
 :lexeme					~ slash_literal			pause => before		event => slash_literal
 slash_literal			~ '/'
@@ -428,6 +436,7 @@ sub _process_pack
 		endian_only_set     => 1,
 	);
 	my($bracket_count) = 0;
+	my($percent_count) = 0;
 	my($slash_count)   = 0;
 
 	if ($self -> options & debug)
@@ -466,7 +475,7 @@ sub _process_pack
 
 		# Ensure modifiers, repeat counts etc are daughters of their primary events.
 
-		if ( ($last_event ne '') && ($bracket_count == 0) && ($slash_count == 0) )
+		if ( ($last_event ne '') && ($bracket_count + $percent_count + $slash_count == 0) )
 		{
 			if ($primary_event{$event_name})
 			{
@@ -490,14 +499,32 @@ sub _process_pack
 			$self -> _push_stack;
 		}
 
-		if ( ($event_name eq 'open_bracket') || ($lexeme eq '(') )
+		# Count the '[', ']', '(' and ')' chars seen.
+		# Use this to stop pushing and popping the stack too often.
+
+		if ($lexeme =~ /[[(]/)
 		{
 			$bracket_count++;
 		}
-		elsif ( ($event_name eq 'close_bracket') || ($lexeme eq ')') )
+		elsif ($lexeme =~ /[\])]/)
 		{
 			$bracket_count--;
 		}
+
+		# Count the '%number' items seen.
+		# Use this to stop pushing and popping the stack too often.
+
+		if ($event_name eq 'percent_literal')
+		{
+			$percent_count++;
+		}
+		elsif ( ($percent_count > 0) && ($event_name ne 'number') )
+		{
+			$percent_count--;
+		}
+
+		# Count the '/' chars seen.
+		# Use this to stop pushing and popping the stack too often.
 
 		if ($event_name eq 'slash_literal')
 		{
