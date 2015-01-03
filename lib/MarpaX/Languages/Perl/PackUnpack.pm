@@ -88,11 +88,19 @@ has pack_recce =>
 	required => 0,
 );
 
-has stack =>
+has pack_stack =>
 (
 	default  => sub{return []},
 	is       => 'rw',
 	isa      => ArrayRef,
+	required => 0,
+);
+
+has pack_tree =>
+(
+	default  => sub{return ''},
+	is       => 'rw',
+	isa      => Any,
 	required => 0,
 );
 
@@ -101,14 +109,6 @@ has template =>
 	default  => sub{return ''},
 	is       => 'rw',
 	isa      => Str,
-	required => 0,
-);
-
-has tree =>
-(
-	default  => sub{return ''},
-	is       => 'rw',
-	isa      => Any,
 	required => 0,
 );
 
@@ -270,18 +270,18 @@ END_OF_GRAMMAR
 
 # ------------------------------------------------
 
-sub _add_daughter
+sub _add_pack_daughter
 {
 	my($self, $name, $attributes)  = @_;
 	$attributes ||= {};
-	my($stack)  = $self -> stack;
+	my($stack)  = $self -> pack_stack;
 	my($node)   = Tree -> new($name);
 
 	$node -> meta($attributes);
 
 	$$stack[$#$stack] -> add_child({}, $node);
 
-} # End of _add_daughter.
+} # End of _add_pack_daughter.
 
 # -----------------------------------------------
 
@@ -343,6 +343,31 @@ sub node2string
 
 # ------------------------------------------------
 
+sub pack_report
+{
+	my($self)   = @_;
+	my($result) = '';
+
+	my($attributes);
+	my($indent);
+	my($text);
+
+	for my $node ($self -> pack_tree -> traverse)
+	{
+		next if ($node -> is_root);
+
+		$attributes = $node -> meta;
+		$text       = $$attributes{text};
+		$indent     = $node -> depth - 1;
+		$result     .= $text;
+	}
+
+	return $result;
+
+} # End of pack_report.
+
+# ------------------------------------------------
+
 sub pack_template
 {
 	my($self, $string) = @_;
@@ -357,11 +382,11 @@ sub pack_template
 		})
 	);
 
-	# Since $self -> stack has not been initialized yet,
-	# we can't call _add_daughter() until after this statement.
+	# Since $self -> pack_stack has not been initialized yet,
+	# we can't call _add_pack_daughter() until after this statement.
 
-	$self -> tree(Tree -> new('root') );
-	$self -> stack([$self -> tree]);
+	$self -> pack_tree(Tree -> new('root') );
+	$self -> pack_stack([$self -> pack_tree]);
 
 	# Return 0 for success and 1 for failure.
 
@@ -396,16 +421,16 @@ sub pack_template
 
 # ------------------------------------------------
 
-sub _pop_stack
+sub _pop_pack_stack
 {
 	my($self)  = @_;
-	my($stack) = $self -> stack;
+	my($stack) = $self -> pack_stack;
 
 	pop @$stack;
 
-	$self -> stack($stack);
+	$self -> pack_stack($stack);
 
-} # End of _pop_stack.
+} # End of _pop_pack_stack.
 
 # ------------------------------------------------
 
@@ -467,24 +492,24 @@ sub _process_pack
 		{
 			if ($primary_event{$event_name})
 			{
-				$self -> _pop_stack;
+				$self -> _pop_pack_stack;
 			}
 			elsif ($primary_event{$last_event})
 			{
-				$self -> _push_stack;
+				$self -> _push_pack_stack;
 			}
 		}
 
 		if ($lexeme eq ')')
 		{
-			$self -> _pop_stack;
+			$self -> _pop_pack_stack;
 		}
 
-		$self -> _add_daughter($event_name, {text => $lexeme});
+		$self -> _add_pack_daughter($event_name, {text => $lexeme});
 
 		if ($lexeme eq '(')
 		{
-			$self -> _push_stack;
+			$self -> _push_pack_stack;
 		}
 
 		if ( ($event_name eq 'open_bracket') || ($lexeme eq '(') )
@@ -539,15 +564,15 @@ sub _process_pack
 
 # ------------------------------------------------
 
-sub _push_stack
+sub _push_pack_stack
 {
 	my($self)      = @_;
-	my($stack)     = $self -> stack;
+	my($stack)     = $self -> pack_stack;
 	my(@daughters) = $$stack[$#$stack] -> children;
 
 	push @$stack, $daughters[$#daughters];
 
-	$self -> stack($stack);
+	$self -> pack_stack($stack);
 
 } # End of _push_stack.
 
@@ -558,7 +583,7 @@ sub tree2string
 	my($self, $options, $tree) = @_;
 	$options                   ||= {};
 	$$options{no_attributes}   ||= 0;
-	$tree                      ||= $self -> tree;
+	$tree                      ||= $self -> pack_tree;
 	my(@nodes)                 = $tree -> traverse;
 
 	my(@out);

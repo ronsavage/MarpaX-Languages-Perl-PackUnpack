@@ -7,7 +7,7 @@ use MarpaX::Languages::Perl::PackUnpack ':constants';
 
 # -----------
 
-my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => nothing_is_fatal | debug);
+my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => nothing_is_fatal);
 my(@text)   =
 (
 	q|@1A((@2A)@3A)|,
@@ -30,8 +30,10 @@ for my $text (@text)
 		$count{success}++;
 	}
 
-	print join("\n", @{$parser -> tree2string}), "\n";
 	print "Parse result: $result (0 is success)\n";
+	#print "tree2string: \n";
+	#print join("\n", @{$parser -> tree2string}), "\n";
+	print 'pack_report: ', $parser -> pack_report, "\n";
 }
 
 $count{fail} = $count{total} - $count{success};
