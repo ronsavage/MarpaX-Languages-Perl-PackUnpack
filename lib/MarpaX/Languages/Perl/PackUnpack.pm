@@ -6,6 +6,8 @@ use warnings;
 use warnings qw(FATAL utf8); # Fatalize encoding glitches.
 use open     qw(:std :utf8); # Undeclared streams in UTF-8.
 
+use Config;
+
 use Const::Exporter constants =>
 [
 	nothing_is_fatal   => 0, # The default.
@@ -121,7 +123,8 @@ sub BUILD
 	my($self) = @_;
 
 	# Policy: Event names are always the same as the name of the corresponding lexeme.
-	# Reference: http://perldoc.perl.org/functions/pack.html.
+	#
+	# Pack syntax reference: http://perldoc.perl.org/functions/pack.html.
 
 	my($pack_bnf) = <<'END_OF_GRAMMAR';
 
@@ -345,8 +348,10 @@ sub node2string
 
 sub pack_report
 {
-	my($self)   = @_;
-	my($result) = '';
+	my($self)     = @_;
+	my($count)    = 0;
+	my($previous) = '';
+	my($result)   = '';
 
 	my($attributes);
 	my($text);
@@ -355,9 +360,13 @@ sub pack_report
 	{
 		next if ($node -> is_root);
 
+		$count++;
+
 		$attributes = $node -> meta;
 		$text       = $$attributes{text};
+		$result     .= ' ' if ( ($count > 1) && ($previous ne '/') && ($node -> value =~ /set$/) );
 		$result     .= $text;
+		$previous   = $text;
 	}
 
 	return $result;
@@ -366,7 +375,7 @@ sub pack_report
 
 # ------------------------------------------------
 
-sub pack_template
+sub parse
 {
 	my($self, $string) = @_;
 	$self -> template($string) if (defined $string);
@@ -415,7 +424,7 @@ sub pack_template
 
 	return $result;
 
-} # End of pack_template.
+} # End of parse.
 
 # ------------------------------------------------
 
@@ -573,6 +582,35 @@ sub _push_pack_stack
 	$self -> pack_stack($stack);
 
 } # End of _push_stack.
+
+# ------------------------------------------------
+
+sub size_report
+{
+	my($self)             = @_;
+	my($is_little_endian) = unpack('c',  pack('s', 1) );
+    my($is_big_endian)    = unpack('xc', pack('s', 1) );
+	my(%size)             =
+	(
+		1 => ['short',    's!', 'S!', $Config{shortsize}, '$Config{shortsize}'],
+		2 => ['int',      'i!', 'I!', $Config{intsize},   '$Config{intsize}'],
+		3 => ['long',     'l!', 'L!', $Config{longsize},  '$Config{longsize}'],
+		4 => ['longlong', 'q!', 'Q!', $Config{longlongsize} || 'Undef', '$Config{longlongsize}'],
+	);
+
+	print "Byte order: $Config{byteorder}. Little endian: $is_little_endian. Big endian: $is_big_endian. \n";
+	print "Some template codes and their size requirements in bytes: \n";
+
+	my($format) = "%-6s  %-8s  %-10s  %-s  %-s\n";
+
+	print sprintf($format, 'Signed', 'Unsigned', 'Name', 'Byte length in Perl', '');
+
+	for my $key (1 .. 4)
+	{
+		print sprintf($format, $size{$key}[1], $size{$key}[2], $size{$key}[0], $size{$key}[3], $size{$key}[4]);
+	}
+
+} # End of size_report.
 
 # -----------------------------------------------
 

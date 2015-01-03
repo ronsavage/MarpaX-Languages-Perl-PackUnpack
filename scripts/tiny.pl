@@ -25,7 +25,7 @@ for my $text (@text)
 
 	print "Parsing |$text|\n";
 
-	$result = $parser -> pack_template($text);
+	$result = $parser -> parse($text);
 
 	if ($result == 0)
 	{
@@ -43,3 +43,7 @@ for my $key (sort keys %count)
 {
 	print sprintf("%-7s: %3d\n", $key, $count{$key});
 }
+
+print "\n";
+
+$parser -> size_report;
