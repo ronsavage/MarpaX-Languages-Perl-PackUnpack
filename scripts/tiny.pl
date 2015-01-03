@@ -10,8 +10,10 @@ use MarpaX::Languages::Perl::PackUnpack ':constants';
 my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => nothing_is_fatal | debug);
 my(@text)   =
 (
-	q|n/a* w/a2|,
-	q|%32W*|,
+	q|n/a* # Newline
+w/a2|,
+	q|aaaa|,
+	q|i9pl|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 
@@ -21,7 +23,7 @@ for my $text (@text)
 {
 	$count{total}++;
 
-	print "$count{total}: Parsing: $text\n";
+	print "$count{total}: Parsing: $text. \n";
 
 	$result = $parser -> parse($text);
 
@@ -31,8 +33,7 @@ for my $text (@text)
 	}
 
 	print "Parse result: $result (0 is success)\n";
-	print join("\n", @{$parser -> tree2string}), "\n";
-	print 'Template: ', $parser -> template_report, "\n";
+	print 'Template: ', $parser -> template_report, ". \n";
 }
 
 print "\n";

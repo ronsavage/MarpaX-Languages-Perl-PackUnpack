@@ -53,7 +53,6 @@ $class -> new
 		'Moo'             => 1.006000,
 		'open'            => 0,
 		'strict'          => 0,
-		'Tree'            => 1.05,
 		'Try::Tiny'       => 0.09,
 		'Types::Standard' => 1.000004,
 		'utf8'            => 0,

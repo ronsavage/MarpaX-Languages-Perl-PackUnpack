@@ -20,8 +20,6 @@ use Marpa::R2;
 
 use Moo;
 
-use Tree;
-
 use Types::Standard qw/Any ArrayRef HashRef Int Str/;
 
 use Try::Tiny;
@@ -106,14 +104,6 @@ has template =>
 	required => 0,
 );
 
-has tree =>
-(
-	default  => sub{return ''},
-	is       => 'rw',
-	isa      => Any,
-	required => 0,
-);
-
 our $VERSION = '1.00';
 
 # ------------------------------------------------
@@ -155,7 +145,7 @@ character				::= basic_set										repeat_token	rank => 1
 							| bang_only_set			bang_token				repeat_token	rank => 2
 							| bang_or_endian_set	bang_or_endian_token	repeat_token	rank => 3
 							| endian_only_set		endian_token			repeat_token	rank => 4
-							| special_set									repeat_special	rank => 5
+							| parentheses									repeat_special	rank => 5
 
 repeat_token			::= repeat_item
 							| repeat_item slash_literal repeat_item
@@ -192,12 +182,6 @@ endian_token			::= endian_literal
 
 # Lexemes in alphabetical order.
 
-:lexeme					~ basic_set				pause => before		event => basic_set
-basic_set				~ [aAZbBhHcCwWuU]
-
-:lexeme					~ bang_literal			pause => before		event => bang_literal
-bang_literal			~ '!'
-
 :lexeme					~ bang_and_endian_set	pause => before		event => bang_and_endian_set
 bang_and_endian_set		~ [sSiIlL]
 
@@ -207,8 +191,14 @@ bang_endian_literal		~ '!>'
 bang_endian_literal		~ '<!'
 bang_endian_literal		~ '>!'
 
+:lexeme					~ bang_literal			pause => before		event => bang_literal
+bang_literal			~ '!'
+
 :lexeme					~ bang_only_set			pause => before		event => bang_only_set
 bang_only_set			~ [xXnNvV@.]
+
+:lexeme					~ basic_set				pause => before		event => basic_set
+basic_set				~ [aAZbBhHcCwWuU]
 
 :lexeme					~ close_bracket			pause => before		event => close_bracket
 close_bracket			~ ']'
@@ -225,14 +215,14 @@ number					~ [\d]+
 :lexeme					~ open_bracket			pause => before		event => open_bracket
 open_bracket			~ '['
 
+:lexeme					~ parentheses			pause => before		event => parentheses
+parentheses				~ [()]
+
 :lexeme					~ percent_literal		pause => before		event => percent_literal
 percent_literal			~ '%'
 
 :lexeme					~ slash_literal			pause => before		event => slash_literal
 slash_literal			~ '/'
-
-:lexeme					~ special_set			pause => before		event => special_set
-special_set				~ [()]
 
 :lexeme					~ star					pause => before		event => star
 star					~ '*'
@@ -281,41 +271,16 @@ END_OF_GRAMMAR
 
 # ------------------------------------------------
 
-sub _add_pack_daughter
+sub _add_daughter
 {
-	my($self, $name, $attributes)  = @_;
-	$attributes ||= {};
-	my($stack)  = $self -> stack;
-	my($node)   = Tree -> new($name);
+	my($self, $node_name, $event_name, $lexeme) = @_;
+	my($stack) = $self -> stack;
 
-	$node -> meta($attributes);
+	push @$stack, [$node_name, $event_name, $lexeme];
 
-	$$stack[$#$stack] -> add_child({}, $node);
+	$self -> stack($stack);
 
-} # End of _add_pack_daughter.
-
-# -----------------------------------------------
-
-sub format_node
-{
-	my($self, $options, $node) = @_;
-	my($s) = $node -> value;
-	$s     .= '. Attributes: ' . $self -> hashref2string($node -> meta) if (! $$options{no_attributes});
-
-	return $s;
-
-} # End of format_node.
-
-# -----------------------------------------------
-
-sub hashref2string
-{
-	my($self, $hashref) = @_;
-	$hashref ||= {};
-
-	return '{' . join(', ', map{qq|$_ => "$$hashref{$_}"|} sort keys %$hashref) . '}';
-
-} # End of hashref2string.
+} # End of _add_daughter.
 
 # ------------------------------------------------
 
@@ -330,27 +295,6 @@ sub next_few_chars
 	return $s;
 
 } # End of next_few_chars.
-
-# -----------------------------------------------
-
-sub node2string
-{
-	my($self, $options, $is_last_node, $node, $vert_dashes) = @_;
-	my($depth)         = $node -> depth;
-	my($sibling_count) = defined $node -> is_root ? 1 : scalar $node -> parent -> children;
-	my($offset)        = ' ' x 4;
-	my(@indent)        = map{$$vert_dashes[$_] || $offset} 0 .. $depth - 1;
-	@$vert_dashes      =
-	(
-		@indent,
-		($sibling_count == 0 ? $offset : '   |'),
-	);
-
-	$indent[1] = '    ' if ($is_last_node && ($depth > 1) );
-
-	return join('', @indent[1 .. $#indent]) . ($depth ? '   |--- ' : '') . $self -> format_node($options, $node);
-
-} # End of node2string.
 
 # ------------------------------------------------
 
@@ -367,12 +311,6 @@ sub parse
 			ranking_method => 'high_rule_only',
 		})
 	);
-
-	# Since $self -> stack has not been initialized yet,
-	# we can't call _add_pack_daughter() until after this statement.
-
-	$self -> tree(Tree -> new('root') );
-	$self -> stack([$self -> tree]);
 
 	# Return 0 for success and 1 for failure.
 
@@ -407,47 +345,34 @@ sub parse
 
 # ------------------------------------------------
 
-sub _pop_stack
-{
-	my($self)  = @_;
-	my($stack) = $self -> stack;
-
-	pop @$stack;
-
-	$self -> stack($stack);
-
-} # End of _pop_stack.
-
-# ------------------------------------------------
-
 sub _process_pack
 {
-	my($self)          = @_;
-	my($string)        = $self -> template || ''; # Allow for undef.
-	my($pos)           = 0;
-	my($length)        = length($string);
-	my($format)        = "%-20s    %5s    %5s    %5s    %-20s    %-20s\n";
-	my($last_event)    = '';
-	my(%primary_event) =
+	my($self)        = @_;
+	my($string)      = $self -> template || ''; # Allow for undef.
+	my($pos)         = 0;
+	my($length)      = length($string);
+	my($format)      = "%-20s    %5s    %5s    %5s    %-20s    %-20s\n";
+	my($last_event)  = '';
+	my(%token_event) =
 	(
 		bang_and_endian_set => 1,
 		bang_only_set       => 1,
 		basic_set           => 1,
 		endian_only_set     => 1,
 	);
-	my($bracket_count) = 0;
-	my($percent_count) = 0;
-	my($slash_count)   = 0;
+
+	$self -> stack([]);
 
 	if ($self -> options & debug)
 	{
-		print "Length of input: $length. Input |$string|\n";
+		print "Input: $string. Length: $length. \n";
 		print sprintf($format, 'Event', 'Start', 'Span', 'Pos', 'Lexeme', 'Comment');
 	}
 
 	my($event_name);
 	my($lexeme);
 	my($message);
+	my($node_name);
 	my($original_lexeme);
 	my($span, $start);
 	my($tos);
@@ -473,67 +398,9 @@ sub _process_pack
 
 		print sprintf($format, $event_name, $start, $span, $pos, $lexeme, '-') if ($self -> options & debug);
 
-		# Ensure modifiers, repeat counts etc are daughters of their primary events.
+		$node_name = ($event_name =~ /_set$/) ? 'token' : $event_name;
 
-		if ( ($last_event ne '') && ($bracket_count + $percent_count + $slash_count == 0) )
-		{
-			if ($primary_event{$event_name})
-			{
-				$self -> _pop_stack;
-			}
-			elsif ($primary_event{$last_event})
-			{
-				$self -> _push_stack;
-			}
-		}
-
-		if ($lexeme eq ')')
-		{
-			$self -> _pop_stack;
-		}
-
-		$self -> _add_pack_daughter($event_name, {text => $lexeme});
-
-		if ($lexeme eq '(')
-		{
-			$self -> _push_stack;
-		}
-
-		# Count the '[', ']', '(' and ')' chars seen.
-		# Use this to stop pushing and popping the stack too often.
-
-		if ($lexeme =~ /[[(]/)
-		{
-			$bracket_count++;
-		}
-		elsif ($lexeme =~ /[\])]/)
-		{
-			$bracket_count--;
-		}
-
-		# Count the '%number' items seen.
-		# Use this to stop pushing and popping the stack too often.
-
-		if ($event_name eq 'percent_literal')
-		{
-			$percent_count++;
-		}
-		elsif ( ($percent_count > 0) && ($event_name ne 'number') )
-		{
-			$percent_count--;
-		}
-
-		# Count the '/' chars seen.
-		# Use this to stop pushing and popping the stack too often.
-
-		if ($event_name eq 'slash_literal')
-		{
-			$slash_count++;
-		}
-		elsif ($slash_count > 0)
-		{
-			$slash_count--;
-		}
+		$self -> _add_daughter($node_name, $event_name, $lexeme);
 
 		$last_event = $event_name;
     }
@@ -569,20 +436,6 @@ sub _process_pack
 
 # ------------------------------------------------
 
-sub _push_stack
-{
-	my($self)      = @_;
-	my($stack)     = $self -> stack;
-	my(@daughters) = $$stack[$#$stack] -> children;
-
-	push @$stack, $daughters[$#daughters];
-
-	$self -> stack($stack);
-
-} # End of _push_stack.
-
-# ------------------------------------------------
-
 sub size_report
 {
 	my($self)             = @_;
@@ -614,52 +467,17 @@ sub size_report
 
 sub template_report
 {
-	my($self)     = @_;
-	my($count)    = 0;
-	my($previous) = '';
-	my($result)   = '';
+	my($self)   = @_;
+	my($result) = '';
 
-	my($attributes);
-	my($text);
-
-	for my $node ($self -> tree -> traverse)
+	for my $node (@{$self -> stack})
 	{
-		next if ($node -> is_root);
-
-		$count++;
-
-		$attributes = $node -> meta;
-		$text       = $$attributes{text};
-		$result     .= ' ' if ( ($count > 1) && ($previous ne '/') && ($node -> value =~ /set$/) );
-		$result     .= $text;
-		$previous   = $text;
+		$result .= $$node[2];
 	}
 
 	return $result;
 
 } # End of template_report.
-
-# -----------------------------------------------
-
-sub tree2string
-{
-	my($self, $options, $tree) = @_;
-	$options                   ||= {};
-	$$options{no_attributes}   ||= 0;
-	$tree                      ||= $self -> tree;
-	my(@nodes)                 = $tree -> traverse;
-
-	my(@out);
-	my(@vert_dashes);
-
-	for my $i (0 .. $#nodes)
-	{
-		push @out, $self -> node2string($options, $i == $#nodes, $nodes[$i], \@vert_dashes);
-	}
-
-	return [@out];
-
-} # End of tree2string.
 
 # ------------------------------------------------
 

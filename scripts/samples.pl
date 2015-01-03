@@ -58,6 +58,9 @@ my(@text)   =
 	q|(sl)5>|,
 	q|a3/A A*|,
 	q|n/a* w/a2|,
+	q|%32 W*|,
+	q|s10 # Comment and newline inside template
+j10|,
 );
 my(%count) = (fail => 0, success => 0, total => 0);
 
@@ -67,7 +70,7 @@ for my $text (@text)
 {
 	$count{total}++;
 
-	print "$count{total}: Parsing: $text\n";
+	print "$count{total}: Parsing: $text. \n";
 
 	$result = $parser -> parse($text);
 
@@ -76,9 +79,8 @@ for my $text (@text)
 		$count{success}++;
 	}
 
-	print join("\n", @{$parser -> tree2string}), "\n";
 	print "Parse result: $result (0 is success)\n";
-	print 'Template: ', $parser -> template_report, "\n";
+	print 'Template: ', $parser -> template_report, ". \n";
 }
 
 print "\n";
