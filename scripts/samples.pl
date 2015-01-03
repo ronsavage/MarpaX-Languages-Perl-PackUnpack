@@ -59,6 +59,8 @@ my(@text)   =
 	q|a3/A A*|,
 	q|n/a* w/a2|,
 	q|%32 W*|,
+	q|Z8 Z8 Z16 L|,
+	q|sx2l|,
 	q|s10 # Comment and newline inside template
 j10|,
 );
