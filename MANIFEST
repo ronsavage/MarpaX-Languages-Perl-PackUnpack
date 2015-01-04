@@ -13,5 +13,6 @@ scripts/pod2html.sh
 scripts/samples.pl
 scripts/synopsis.pl
 scripts/tiny.pl
+scripts/traverse.pl
 t/test.t
 xt/author/pod.t
