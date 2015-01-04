@@ -10,9 +10,10 @@ use MarpaX::Languages::Perl::PackUnpack ':constants';
 my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => print_warnings);
 my(@text)   =
 (
+	q|(sl)<|,
+	q|%32 W*|,
 	q|a3/A A*|,
 	q|d[x![d]]|,
-	q|%32 W*|,
 );
 my($format) = "%-20s  %-20s  %-10s  %-10s\n";
 

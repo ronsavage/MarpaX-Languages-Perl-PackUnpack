@@ -839,11 +839,11 @@ Default: ''.
 
 =head2 bnf()
 
-Returns a string containing the grammar constructed based on user input.
+Returns a string containing the grammar.
 
 =head2 error_message()
 
-Returns the last error or warning message set when the code died.
+Returns the last error or warning message set.
 
 Error messages always start with 'Error: '. Messages never end with "\n".
 
@@ -991,7 +991,7 @@ before calling C<parse()>.
 Note: If a string is passed to C<parse()>, it takes precedence over any string passed to
 C<< new(template => $string) >>, and over any string passed to L</template([$string])>. Further,
 the string passed to C<parse()> is passed to L</template([$string])>, meaning any subsequent
-call to C<text()> returns the string passed to C<parse()>.
+call to C<template()> returns the string passed to C<parse()>.
 
 See scripts/samples.pl.
 
@@ -1003,53 +1003,7 @@ If the value is 1, you should call L</error_number()> to find out what happened.
 
 Prints some statistics for the sizes of various integers (short, int, long, etc).
 
-See scripts/samples.pl and scripts/tiny.pl.
-
-=head2 stack()
-
-Returns an arrayref of items which resulted from calling L</parse([$string])>. Each item
-is an array of 3 elements:
-
-=over 4
-
-=item o [0]: The name of this item
-
-The name is either 'token', or the name of the event which triggered recognition of this item
-in the input template.
-
-The name 'token' represents one of the characters listed in the first table in
-L<the docs for pack()|http://perldoc.perl.org/functions/pack.html>, not counting the '(' at the
-end of that table.
-
-Otherwise, this is the name of a lexeme of the BNF.
-
-=item o [1]: The name of the event
-
-An item of the BNF. This is provided in case [0] says 'token', and you wish to know which part
-of the BNF applies.
-
-=item o [2]: The substring (a few characters at most) in the input string which is the value of
-the lexeme identified by [1].
-
-=back
-
-For instance, in the template 'a3/AA*', there would be 6 items in the stack, each of 3 elements:
-
-=over 4
-
-=item o [0]: token, basic_set, a
-
-=item o [1]: number, number, 3
-
-=item o [2]: slash_literal, slash_literal, /
-
-=item o [3]: token, basic_set, A
-
-=item o [4]: token, basic_set, A
-
-=item o [5]: star, star, *
-
-=back
+See scripts/synopsis.pl.
 
 =head2 template([$string])
 
@@ -1061,7 +1015,10 @@ Get or set the string to be parsed.
 
 =head2 template_report
 
-Get the string output from the parse.
+Get the string output from the parse. The code generates this string by walking the nodes of the
+L<Tree> returned by a call to C<< $self -> tree() >>.
+
+Apart from perhaps spacing, it will be identical to the string passed in to be parsed.
 
 See t/test.t.
 
@@ -1110,13 +1067,6 @@ The tree looks like:
 	   |           |--- M. Attributes: {# => "5"}
 	   |               |--- N. Attributes: {# => "5"}
 	   |                   |--- O. Attributes: {# => "5"}
-	   |--- D. Attributes: {# => "6"}
-	   |   |--- F. Attributes: {# => "8"}
-	   |       |--- G. Attributes: {# => "8"}
-	   |--- E. Attributes: {# => "7"}
-	   |   |--- F. Attributes: {# => "8"}
-	   |--- B. Attributes: {# => "9"}
-	       |--- C. Attributes: {# => "9"}
 
 Or, without attributes:
 
@@ -1137,14 +1087,6 @@ Or, without attributes:
 	   |           |--- M
 	   |               |--- N
 	   |                   |--- O
-	   |--- D
-	   |   |--- F
-	   |       |--- G
-	   |--- E
-	   |   |--- F
-	   |       |--- G
-	   |--- B
-	       |--- C
 
 See scripts/samples.pl.
 
@@ -1234,7 +1176,7 @@ See L</Synopsis>.
 
 =head2 How do I make use of the tree built by the parser?
 
-See scripts/traverse.pl. It is a copy of t/html.t with tree-walking code instead of test code.
+See scripts/traverse.pl.
 
 =head2 How is the parsed data held in RAM?
 
@@ -1243,19 +1185,48 @@ The parsed output is held in a tree managed by L<Tree>.
 The tree always has a root node, which has nothing to do with the input data. So, even an empty
 imput string will produce a tree with 1 node. This root has an empty hashref associated with it.
 
-Nodes have a name and a hashref of attributes.
+Nodes have a name (accessed with the C<value()> method) and a hashref of attributes (accessed
+with the C<meta()> method).
 
 The name indicates the type of node. Names are one of these literals:
 
 =over 4
 
-=item o close
+=item o 'token'
 
-=item o open
+If the node's name is 'token', then the node represents one of the template characters listed in the
+first table in L<the docs for pack()|http://perldoc.perl.org/functions/pack.html>. Actually, both
+'(' and ')' are called 'token'.
 
-=item o root
+=item o $lexeme_name
+
+This means all other lexemes identified in the parse have as their node name the name of a lexeme
+as given in the grammar returned by the L</bnf()> method. The actual lexeme in question is the one
+used to identify a substring of the input template.
 
 =back
+
+See the following hashref for details.
+
+For each node, the attributes hashref contains 2 keys:
+
+=over 4
+
+=item o event => $lexeme_name
+
+This is always $lexeme_name (as just above), even in those cases where the node's name
+is 'token'.
+
+=item o text => $text
+
+This is a substring from the template being parsed. The exact contents and length of this string
+depend on which lexeme in the input template was recognised, and which is identified by the value
+of the event key.
+
+=back
+
+See scripts/traverse.pl, which prints a few trees differently than what happens when
+L</tree2string($options, [$some_tree])> is called.
 
 =head2 What is the homepage of Marpa?
 
