@@ -18,14 +18,14 @@ my(@text)   =
 my($format) = "%-20s  %-20s  %-10s  %-10s\n";
 
 my($attributes);
-my($event);
+my($lexeme);
 my($result);
 my($text);
 
 for my $text (@text)
 {
 	print "Parsing: $text. \n";
-	print sprintf($format, 'Node name', 'Event name', 'Depth', 'Text');
+	print sprintf($format, 'Node name', 'Lexeme name', 'Depth', 'Text');
 
 	$result = $parser -> parse($text);
 
@@ -34,10 +34,10 @@ for my $text (@text)
 		next if ($node -> is_root);
 
 		$attributes = $node -> meta;
-		$event      = $$attributes{event};
+		$lexeme     = $$attributes{lexeme};
 		$text       = $$attributes{text};
 
-		print sprintf($format, $node -> value, $event, $node -> depth, $text);
+		print sprintf($format, $node -> value, $lexeme, $node -> depth, $text);
 	}
 
 	print '-' x 66, "\n";

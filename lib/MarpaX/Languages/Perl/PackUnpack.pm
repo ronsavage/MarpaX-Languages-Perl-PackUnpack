@@ -283,11 +283,11 @@ END_OF_GRAMMAR
 
 sub _add_daughter
 {
-	my($self, $node_name, $event_name, $lexeme) = @_;
+	my($self, $node_name, $lexeme_name, $lexeme) = @_;
 	my($stack)  = $self -> stack;
 	my($node)   = Tree -> new($node_name);
 
-	$node -> meta({event => $event_name, text => $lexeme});
+	$node -> meta({lexeme => $lexeme_name, text => $lexeme});
 
 	$$stack[$#$stack] -> add_child({}, $node);
 
@@ -717,34 +717,34 @@ This is the output of synopsis.pl:
 	Parsing: n/a* # Newline
 	w/a2.
 	root. Attributes: {}
-	   |--- token. Attributes: {event => "bang_only_set", text => "n"}
-	   |   |--- slash_literal. Attributes: {event => "slash_literal", text => "/"}
-	   |   |--- token. Attributes: {event => "basic_set", text => "a"}
-	   |   |   |--- star. Attributes: {event => "star", text => "*"}
-	   |   |--- token. Attributes: {event => "basic_set", text => "w"}
-	   |   |   |--- slash_literal. Attributes: {event => "slash_literal", text => "/"}
-	   |   |--- token. Attributes: {event => "basic_set", text => "a"}
-	       |   |--- number. Attributes: {event => "number", text => "2"}
+	   |--- token. Attributes: {lexeme => "bang_only_set", text => "n"}
+	   |   |--- slash_literal. Attributes: {lexeme => "slash_literal", text => "/"}
+	   |   |--- token. Attributes: {lexeme => "basic_set", text => "a"}
+	   |   |   |--- star. Attributes: {lexeme => "star", text => "*"}
+	   |   |--- token. Attributes: {lexeme => "basic_set", text => "w"}
+	   |   |   |--- slash_literal. Attributes: {lexeme => "slash_literal", text => "/"}
+	   |   |--- token. Attributes: {lexeme => "basic_set", text => "a"}
+	       |   |--- number. Attributes: {lexeme => "number", text => "2"}
 	Parse result: 0 (0 is success)
 	Template: n/a* w/a2.
 	--------------------------------------------------
 	Parsing: a3/A A*.
 	root. Attributes: {}
-	   |--- token. Attributes: {event => "basic_set", text => "a"}
-	   |   |--- number. Attributes: {event => "number", text => "3"}
-	   |   |--- slash_literal. Attributes: {event => "slash_literal", text => "/"}
-	   |   |--- token. Attributes: {event => "basic_set", text => "A"}
-	   |   |--- token. Attributes: {event => "basic_set", text => "A"}
-	       |   |--- star. Attributes: {event => "star", text => "*"}
+	   |--- token. Attributes: {lexeme => "basic_set", text => "a"}
+	   |   |--- number. Attributes: {lexeme => "number", text => "3"}
+	   |   |--- slash_literal. Attributes: {lexeme => "slash_literal", text => "/"}
+	   |   |--- token. Attributes: {lexeme => "basic_set", text => "A"}
+	   |   |--- token. Attributes: {lexeme => "basic_set", text => "A"}
+	       |   |--- star. Attributes: {lexeme => "star", text => "*"}
 	Parse result: 0 (0 is success)
 	Template: a3/A A*.
 	--------------------------------------------------
 	Parsing: i9pl.
 	root. Attributes: {}
-	   |--- token. Attributes: {event => "bang_and_endian_set", text => "i"}
-	   |   |--- number. Attributes: {event => "number", text => "9"}
-	   |   |--- token. Attributes: {event => "endian_only_set", text => "p"}
-	       |--- token. Attributes: {event => "bang_and_endian_set", text => "l"}
+	   |--- token. Attributes: {lexeme => "bang_and_endian_set", text => "i"}
+	   |   |--- number. Attributes: {lexeme => "number", text => "9"}
+	   |   |--- token. Attributes: {lexeme => "endian_only_set", text => "p"}
+	       |--- token. Attributes: {lexeme => "bang_and_endian_set", text => "l"}
 	Parse result: 0 (0 is success)
 	Template: i9 p l.
 	--------------------------------------------------
@@ -766,6 +766,11 @@ templates used in pack() and unpack().
 The parsed details are stored in a L<Tree>, and can be accessed via the methods
 L</tree2string($options, [$some_tree])> and L</template_report>. The tree itself can be accessed
 with the method L</tree()>.
+
+Policy: Event names are always the same as the name of the corresponding lexeme. So any reference to
+'event name' is the same as to 'lexeme name', and visa versa. This can be seen in the grammar where
+every lexeme which is not discarded is associated with an event of the same name. This matter is
+discussed in detail under the question L<FAQ/How is the parsed data held in RAM?>.
 
 =head1 Distributions
 
@@ -1195,7 +1200,7 @@ The name indicates the type of node. Names are one of these literals:
 =item o 'token'
 
 If the node's name is 'token', then the node represents one of the template characters listed in the
-first table in L<the docs for pack()|http://perldoc.perl.org/functions/pack.html>. Actually, both
+first table in L<the docs for pack()|http://perldoc.perl.org/functions/pack.html>. Note: both
 '(' and ')' are called 'token'.
 
 =item o $lexeme_name
@@ -1212,7 +1217,7 @@ For each node, the attributes hashref contains 2 keys:
 
 =over 4
 
-=item o event => $lexeme_name
+=item o lexeme => $lexeme_name
 
 This is always $lexeme_name (as just above), even in those cases where the node's name
 is 'token'.
@@ -1220,8 +1225,8 @@ is 'token'.
 =item o text => $text
 
 This is a substring from the template being parsed. The exact contents and length of this string
-depend on which lexeme in the input template was recognised, and which is identified by the value
-of the event key.
+depend on which lexeme in the input template was recognised, which is identified by the value
+of the 'lexeme' key.
 
 =back
 
