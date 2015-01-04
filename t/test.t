@@ -24,7 +24,7 @@ my(@text)   =
 	q|n/a* w/a2|,
 	q|d[ x![ d]]|,
 	q|@1 A ( ( @2 A ) @3 A )|,
-	q|s10 # Comment and newline inside template
+	qq|s10 # Comment and newline inside template
 j10|,
 );
 my($count) = 0;
@@ -42,7 +42,7 @@ for my $text (@text)
 	$retrieved = $parser -> template_report;
 	$text      = 's10 j10' if ($text =~ /^s10/);
 
-	ok($text eq $retrieved, "Retrieved: <$text> <$retrieved>");
+	ok($text eq $retrieved, "Retrieved: $text");
 }
 
 done_testing($count);
