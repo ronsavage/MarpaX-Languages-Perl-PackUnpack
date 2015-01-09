@@ -141,7 +141,7 @@ template				::= item+
 # when there is no rank. In such a case, you get this:
 #	Error: Parse failed. value() called when recognizer is not in tree mode
 #	  The current mode is "forest"
-# Since here is does not matter which way we jump, I've arbitrarily used ranks 1 .. 4.
+# Since here is does not matter which way we jump, I've arbitrarily used ranks 1 .. 5.
 # AFAIK any ranks will do, as long as they are different.
 # BTW: These ranks only work because I've used (ranking_method => 'high_rule_only')
 # in the call to the constructor Marpa::R2::Scanless::R -> new().
@@ -1183,6 +1183,13 @@ See L</Synopsis>.
 
 See scripts/traverse.pl.
 
+=head2 Why did you use a tree to hold the output?
+
+Because I wanted each template character to be a daughter of the root, and any parameters belonging
+to those letters to be daughters of the character's node.
+
+For details, see the next question.
+
 =head2 How is the parsed data held in RAM?
 
 The parsed output is held in a tree managed by L<Tree>.
@@ -1211,9 +1218,7 @@ used to identify a substring of the input template.
 
 =back
 
-See the following hashref for details.
-
-For each node, the attributes hashref contains 2 keys:
+Further, for each node, the attributes hashref contains 2 keys:
 
 =over 4
 
@@ -1225,8 +1230,8 @@ is 'token'.
 =item o text => $text
 
 This is a substring from the template being parsed. The exact contents and length of this string
-depend on which lexeme in the input template was recognised, which is identified by the value
-of the 'lexeme' key.
+depend on which lexeme in the input template was recognised, and the lexeme's name is given by the
+value of the 'lexeme' key.
 
 =back
 
