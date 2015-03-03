@@ -30,17 +30,17 @@ my(%params) =
 	PREREQ_PM =>
 	{
 		'Const::Exporter' => 'v0.2.3',
-		'Marpa::R2'       => 2.096000,
-		'Moo'             => 1.006000,
-		'open'            => 0,
-		'strict'          => 0,
-		'Test::More'      => 1.001006,
-#		'Test::Pod'       => 1.45, # Make it optional. See xt/author/pod.t
-		'Tree'            => 1.05,
-		'Try::Tiny'       => 0.09,
+		'Marpa::R2' => 2.096000,
+		'Moo' => 1.006000,
+		'open' => 0,
+		'strict' => 0,
+		'Test::More' => 1.001014,
+		'Test::Pod' => 1.48,
+		'Tree' => 1.05,
+		'Try::Tiny' => 0.09,
 		'Types::Standard' => 1.000004,
-		'utf8'            => 0,
-		'warnings'        => 0,
+		'utf8' => 0,
+		'warnings' => 0,
 	},
 	VERSION_FROM => 'lib/MarpaX/Languages/Perl/PackUnpack.pm',
 );
@@ -56,17 +56,17 @@ if ($ExtUtils::MakeMaker::VERSION ge '6.46')
 	{
 		'meta-spec' =>
 		{
-			version => 2,
+		'version' => 2,
 		},
 		resources   =>
 		{
-			bugtracker => 'https://rt.cpan.org/Public/Dist/Display.html?Name=MarpaX-Languages-Perl-PackUnpack',
-			license    => 'http://opensource.org/licenses/Artistic-2.0',
+		'bugtracker' => 'https://rt.cpan.org/Public/Dist/Display.html?Name=MarpaX-Languages-Perl-PackUnpack',
+		'license' => 'http://opensource.org/licenses/Artistic-2.0',
 			repository =>
 			{
-				type => 'git',
-				url  => 'https://github.com/ronsavage/MarpaX-Languages-Perl-PackUnpack.git',
-				web  => 'https://github.com/ronsavage/MarpaX-Languages-Perl-PackUnpack',
+		'type' => 'git',
+		'url' => 'https://github.com/ronsavage/MarpaX-Languages-Perl-PackUnpack.git',
+		'web' => 'https://github.com/ronsavage/MarpaX-Languages-Perl-PackUnpack',
 			},
 		},
 	};
