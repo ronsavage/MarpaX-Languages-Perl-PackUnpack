@@ -7,7 +7,7 @@ use MarpaX::Languages::Perl::PackUnpack ':constants';
 
 # -----------
 
-my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => nothing_is_fatal | debug);
+my($parser) = MarpaX::Languages::Perl::PackUnpack -> new(options => nothing_is_fatal);
 my(@text)   =
 (
 	q|(sl)|,
