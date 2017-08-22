@@ -45,4 +45,6 @@ for my $text (@text)
 	ok($text eq $retrieved, "Retrieved: $text");
 }
 
+print "# Internal test count: $count\n";
+
 done_testing($count);
